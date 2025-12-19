@@ -1,0 +1,59 @@
+[
+  {
+    "name": "Anil Jain",
+    "position": "Chairman & Managing Director",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/ed39453b975c767adc77858e9ce4ab7d.jpeg",
+    "category": "Board Member",
+    "order": 1,
+    "isActive": true
+  },
+  {
+    "name": "Dinesh Kumar Agarwal",
+    "position": "Whole-Time Director & Chief Financial Officer",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/eb126fbf9c5ff5cb7d8691e3a9ed316c.jpeg",
+    "category": "Board Member",
+    "order": 2,
+    "isActive": true
+  },
+  {
+    "name": "Susmitha Siripurapu",
+    "position": "Non-Executive Director",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/a8b7e2e85c235d3d2864abbc762a811a.jpeg",
+    "category": "Board Member",
+    "order": 3,
+    "isActive": true
+  },
+  {
+    "name": "Dr. Vineet Kothari",
+    "position": "Independent Director",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/72e4f4bfcf8a0ad40a177f7d9a063dda.jpeg",
+    "category": "Board Member",
+    "order": 4,
+    "isActive": true
+  },
+  {
+    "name": "Sivaramakrishnan Vasudevan",
+    "position": "Independent Director",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/1ef038f70a477ba1387dd4cf04430322.jpeg",
+    "category": "Board Member",
+    "order": 5,
+    "isActive": true
+  },
+  {
+    "name": "Latha Venkatesh",
+    "position": "Independent Director",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/587b9d9d4dad1920018d74b15906558f.jpeg",
+    "category": "Board Member",
+    "order": 6,
+    "isActive": true
+  },
+  {
+    "name": "Ramesh Dugar",
+    "position": "Independent Director",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/74924bc6d127e3040cd2b13a1164f058.jpeg",
+    "category": "Board Member",
+    "order": 7,
+    "isActive": true
+  }
+]
+

@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Get in Touch",
+    "subtitle": "Have Questions? We're happy to help!",
+    "mapEmbedUrl": "https://maps.google.com/maps?q=Refex%20Industries%20Limited%202nd%20Floor%2C%20No.313%2C%20Refex%20Towers%2C%20Sterling%20Road%2C%20Valluvar%20Kottam%20High%20Road%2C%20Nungambakkam%2C%20Chennai%2C%20Tamil%20Nadu%20-%20600034&t=m&z=17&output=embed&iwloc=near",
+    "formEndpointUrl": "https://readdy.ai/api/form/d4ijdrv1vras6h6ft1qg",
+    "successMessage": "Thank you! Your message has been sent successfully.",
+    "errorMessage": "Sorry, there was an error sending your message. Please try again.",
+    "isActive": true
+  }
+]
+

@@ -1,0 +1,516 @@
+import Header from '../../home/components/Header';
+import Footer from '../../home/components/Footer';
+import ScrollToTop from '../../home/components/ScrollToTop';
+import HeroSection from '../components/HeroSection';
+import InvestorSidebar from '../components/InvestorSidebar';
+import { useState, useEffect } from 'react';
+import { investorsCmsApi } from '../../../services/api';
+import { useParams, useLocation } from 'react-router-dom';
+
+interface Document {
+  title: string;
+  date: string;
+  year: string;
+  pdfUrl: string;
+}
+
+interface Content {
+  title: string;
+  subtitle: string;
+  content: string;
+}
+
+interface Audio {
+  name: string;
+  year: string;
+  audioUrl: string;
+  pdfUrl: string;
+}
+
+interface Section {
+  title: string;
+  documents: Document[];
+  contents?: Content[];
+  audios?: Audio[];
+}
+
+interface PageContent {
+  id?: number;
+  slug: string;
+  title: string;
+  hasYearFilter: boolean;
+  filterItems?: string[];
+  sections: Section[];
+  isActive: boolean;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+const getFullUrl = (url: string): string => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  if (url.startsWith('/')) {
+    return `${API_BASE_URL}${url}`;
+  }
+  return `${API_BASE_URL}/${url}`;
+};
+
+export default function InvestorDynamicPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const location = useLocation();
+  const [pageContent, setPageContent] = useState<PageContent | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (slug) {
+      loadPageContent();
+    }
+  }, [slug]);
+
+  const loadPageContent = async () => {
+    if (!slug) return;
+    
+    try {
+      setLoading(true);
+      const data = await investorsCmsApi.getPageContentBySlug(slug);
+      if (data && data.isActive) {
+        // Handle both camelCase and snake_case from API response
+        const filterItems = (data.filterItems || (data as any).filter_items || []);
+        const pageData = {
+          ...data,
+          filterItems: Array.isArray(filterItems) ? filterItems : [],
+        };
+        setPageContent(pageData);
+        
+        // Set default year to the most recent year if available
+        if (data.hasYearFilter) {
+          const availableYears = filterItems && filterItems.length > 0
+            ? [...filterItems].sort().reverse()
+            : (data.sections && data.sections.length > 0
+              ? (data.sections as Section[])
+                  .flatMap((s: Section) => s.documents.map((d: Document) => d.year))
+                  .filter((year: string, index: number, self: string[]) => year && self.indexOf(year) === index)
+                  .sort()
+                  .reverse()
+              : []);
+          if (availableYears.length > 0) {
+            setSelectedYear(availableYears[0]);
+          }
+        }
+      } else {
+        setPageContent(null);
+      }
+    } catch (err) {
+      console.error('Failed to load page content:', err);
+      setPageContent(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleView = (pdfUrl: string) => {
+    if (pdfUrl.includes('example.com')) {
+      alert('Please upload the actual PDF file. This is a placeholder link.');
+      return;
+    }
+    window.open(getFullUrl(pdfUrl), '_blank');
+  };
+
+  const handleDownload = async (pdfUrl: string, title: string) => {
+    if (pdfUrl.includes('example.com')) {
+      alert('Please upload the actual PDF file. This is a placeholder link.');
+      return;
+    }
+    
+    try {
+      const fileExtension = pdfUrl.match(/\.([^.]+)(?:\?|$)/)?.[1] || 'pdf';
+      const filename = `${title.replace(/[^a-zA-Z0-9\s]/g, '')}.${fileExtension}`;
+      
+      const response = await fetch(`${API_BASE_URL}/api/download-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: getFullUrl(pdfUrl), filename }),
+      });
+
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(getFullUrl(pdfUrl), '_blank');
+    }
+  };
+
+  // Get all available years from CMS filter items or extract from documents
+  const getAllYears = (): string[] => {
+    if (!pageContent) return [];
+    
+    // Use CMS-defined filter items if available
+    const filterItems = pageContent.filterItems || (pageContent as any).filter_items || [];
+    if (filterItems && filterItems.length > 0) {
+      return [...filterItems].sort().reverse();
+    }
+    
+    // Otherwise, extract from documents
+    if (!pageContent.sections || pageContent.sections.length === 0) return [];
+    const years = pageContent.sections
+      .flatMap((s: Section) => s.documents.map((d: Document) => d.year))
+      .filter((year: string, index: number, self: string[]) => year && self.indexOf(year) === index)
+      .sort()
+      .reverse();
+    return years;
+  };
+
+  // Filter documents by year
+  const getFilteredDocuments = (documents: Document[]): Document[] => {
+    if (!pageContent || !pageContent.hasYearFilter) return documents;
+    return documents.filter(doc => doc.year === selectedYear);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <HeroSection />
+        <section className="py-16 bg-[#e7e7e7]">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#7cd244]"></div>
+                <p className="mt-4 text-gray-600">Loading page content...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <Footer />
+        <ScrollToTop />
+      </div>
+    );
+  }
+
+  if (!pageContent || !pageContent.isActive) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <HeroSection />
+        <section className="py-16 bg-[#e7e7e7]">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Page Not Found</h2>
+              <p className="text-gray-600">The page you are looking for does not exist or is not active.</p>
+            </div>
+          </div>
+        </section>
+        <Footer />
+        <ScrollToTop />
+      </div>
+    );
+  }
+
+  const availableYears = getAllYears();
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <HeroSection title={pageContent.title} />
+      
+      <section className="py-16 bg-[#e7e7e7]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left Sidebar - Links */}
+            <InvestorSidebar currentPath={location.pathname} />
+
+            {/* Right Content */}
+            <div className="lg:col-span-9">
+              {/* Year Filter */}
+              {pageContent.hasYearFilter && availableYears.length > 0 && (
+                <div className="mb-6 flex justify-end">
+                  <select 
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#7cd244]"
+                  >
+                    {availableYears.map(year => (
+                      <option key={year} value={year}>FY {year}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Sections */}
+              {pageContent.sections && pageContent.sections.length > 0 ? (
+                pageContent.sections.map((section, sectionIndex) => {
+                  const filteredDocs = getFilteredDocuments(section.documents || []);
+                  const contents = section.contents || [];
+                  const allAudios = section.audios || [];
+                  const filteredAudios = allAudios.filter((audio) => {
+                    if (!pageContent.hasYearFilter || !selectedYear) {
+                      return true;
+                    }
+                    return audio.year === selectedYear;
+                  });
+                  
+                  // Check if section has any content to display
+                  const hasContent = contents.length > 0 || filteredAudios.length > 0 || filteredDocs.length > 0;
+                  
+                  // Don't render section if no content available
+                  if (!hasContent) return null;
+                  
+                  return (
+                    <div key={sectionIndex} className="mb-8">
+                      <h3 
+                        className="font-semibold mb-4"
+                        style={{ color: '#2879b6', fontSize: '20px' }}
+                      >
+                        {section.title}
+                      </h3>
+                      
+                      {/* Content Items */}
+                      {contents.length > 0 && (
+                        <div className="bg-white shadow-sm p-8 mb-8">
+                          <div className="space-y-8">
+                            {contents.map((content, contentIndex) => {
+                              // Parse content to extract phone and email
+                              const phoneMatch = content.content.match(/Phone:\s*([^\n]+)/i);
+                              const emailMatch = content.content.match(/Email:\s*([^\n]+)/i);
+                              const phone = phoneMatch ? phoneMatch[1].trim() : null;
+                              const email = emailMatch ? emailMatch[1].trim() : null;
+                              
+                              // Extract all content lines
+                              const contentLines = content.content.split('\n').map(line => line.trim()).filter(line => line);
+                              
+                              // Separate company/address lines from phone/email
+                              const infoLines = contentLines.filter(line => {
+                                const lowerLine = line.toLowerCase();
+                                return !lowerLine.startsWith('phone:') && !lowerLine.startsWith('email:');
+                              });
+                              
+                              return (
+                                <div key={`content-${contentIndex}`} className="border-b border-gray-200 pb-6 last:border-b-0">
+                                  <h3 className="text-xl font-bold text-gray-900 mb-2">{content.title}</h3>
+                                  {content.subtitle && (
+                                    <p className="text-gray-600 mb-1">{content.subtitle}</p>
+                                  )}
+                                  {infoLines.length > 0 && (
+                                    <div className="text-gray-600">
+                                      {infoLines.map((line, lineIndex) => (
+                                        <p key={lineIndex} className={lineIndex < infoLines.length - 1 ? "mb-1" : "mb-3"}>{line}</p>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {phone && (
+                                    <p className="text-gray-700">
+                                      Phone: <a 
+                                        href={`tel:${phone.replace(/[^0-9+]/g, '')}`} 
+                                        className="text-[#7cd244] hover:underline cursor-pointer"
+                                      >
+                                        {phone}
+                                      </a>
+                                    </p>
+                                  )}
+                                  {email && (
+                                    <p className="text-gray-700">
+                                      Email: <a 
+                                        href={`mailto:${email}`} 
+                                        className="text-[#7cd244] hover:underline cursor-pointer"
+                                      >
+                                        {email}
+                                      </a>
+                                    </p>
+                                  )}
+                                  {/* If no structured content, display as-is */}
+                                  {!phone && !email && contentLines.length === 0 && content.content.trim() && (
+                                    <div className="text-gray-600 whitespace-pre-line">{content.content}</div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Audio Items */}
+                      {filteredAudios.length > 0 && (
+                        <div className="space-y-4">
+                          {filteredAudios.map((audio, audioIndex) => (
+                            <div 
+                              key={`audio-${audioIndex}`} 
+                              className="flex flex-col gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                            >
+                              {/* First Row: Icon, Name, View/Download */}
+                              <div className="flex items-center gap-4">
+                                <div className="flex-shrink-0">
+                                  <img 
+                                    src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
+                                    alt="Document" 
+                                    className="w-12 h-12"
+                                  />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p 
+                                    className="font-medium mb-1"
+                                    style={{ color: '#484848', fontSize: '16px' }}
+                                  >
+                                    {audio.name}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-6 flex-shrink-0">
+                                  {audio.pdfUrl && (
+                                    <a
+                                      href={getFullUrl(audio.pdfUrl)}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                                      style={{ color: '#2879b6', fontSize: '16px' }}
+                                    >
+                                      View
+                                      <img 
+                                        src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
+                                        alt="View" 
+                                        style={{ width: '16px', height: '16px' }}
+                                      />
+                                    </a>
+                                  )}
+                                  {audio.pdfUrl && (
+                                    <a
+                                      href={getFullUrl(audio.pdfUrl)}
+                                      download={audio.name.replace(/[^a-z0-9]/gi, '_') + '.pdf'}
+                                      className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                                      style={{ color: '#2879b6', fontSize: '16px' }}
+                                    >
+                                      Download
+                                      <svg 
+                                        width="16" 
+                                        height="16" 
+                                        viewBox="0 0 24 24" 
+                                        fill="none" 
+                                        xmlns="http://www.w3.org/2000/svg"
+                                      >
+                                        <path 
+                                          d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
+                                          fill="#2879b6"
+                                        />
+                                      </svg>
+                                    </a>
+                                  )}
+                                </div>
+                              </div>
+                              {/* Second Row: Audio Player */}
+                              {audio.audioUrl && (
+                                <div className="mt-2">
+                                  <audio controls className="w-full">
+                                    <source src={getFullUrl(audio.audioUrl)} type="audio/mpeg" />
+                                    <source src={getFullUrl(audio.audioUrl)} type="audio/mp3" />
+                                    <source src={getFullUrl(audio.audioUrl)} type="audio/wav" />
+                                    Your browser does not support the audio element.
+                                  </audio>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Documents */}
+                      {section.documents && section.documents.length > 0 && (
+                        <>
+                          {filteredDocs.length > 0 ? (
+                            <div className="space-y-4">
+                              {filteredDocs.map((doc, docIndex) => (
+                                <div 
+                                  key={docIndex} 
+                                  className="flex items-center gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                                >
+                                  <div className="flex-shrink-0">
+                                    <img 
+                                      src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
+                                      alt="PDF" 
+                                      className="w-12 h-12"
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p 
+                                      className="font-medium mb-1"
+                                      style={{ color: '#484848', fontSize: '16px' }}
+                                    >
+                                      {doc.title}
+                                    </p>
+                                    <p 
+                                      style={{ color: '#484848', fontSize: '16px' }}
+                                    >
+                                      Published Date: <time>{doc.date}</time>
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-6 flex-shrink-0">
+                                    <button 
+                                      onClick={() => handleView(doc.pdfUrl)}
+                                      className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                                      style={{ color: '#2879b6', fontSize: '16px' }}
+                                    >
+                                      View
+                                      <img 
+                                        src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
+                                        alt="View" 
+                                        style={{ width: '16px', height: '16px' }}
+                                      />
+                                    </button>
+                                    <button 
+                                      onClick={() => handleDownload(doc.pdfUrl, doc.title)}
+                                      className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                                      style={{ color: '#2879b6', fontSize: '16px' }}
+                                    >
+                                      Download
+                                      <svg 
+                                        width="16" 
+                                        height="16" 
+                                        viewBox="0 0 24 24" 
+                                        fill="none" 
+                                        xmlns="http://www.w3.org/2000/svg"
+                                      >
+                                        <path 
+                                          d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
+                                          fill="#2879b6"
+                                        />
+                                      </svg>
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-6 py-8 text-center text-gray-500">
+                              No documents available for the selected year.
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="bg-white p-8 text-center text-gray-500">
+                  No sections available. Please add content in the CMS.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+      <ScrollToTop />
+    </div>
+  );
+}
+

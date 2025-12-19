@@ -1,0 +1,33 @@
+[
+  {
+    "title": "Sustainability & ESG",
+    "description": "Minimizing our environmental impact, supporting ethical practices, and driving positive change for future generations.",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/5c9042a5517cccc81c390f42360622c6.png",
+    "backImage": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/ff134ade3e7cdb06a591b9f787f35d1d.png",
+    "link": "/esg/",
+    "slug": "sustainability-esg",
+    "order": 1,
+    "isActive": true
+  },
+  {
+    "title": "Investors",
+    "description": "Explore our financial reports, stock information, investor presentations, and key announcements to learn more about how we're building a future-focused business.",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/857fbfe05f675330f7e584bf0ab44ecc.png",
+    "backImage": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/4fdca67bdfb39a83d2b83210bb1b5cf3.png",
+    "link": "/investors/",
+    "slug": "investors",
+    "order": 2,
+    "isActive": true
+  },
+  {
+    "title": "Life At Refex",
+    "description": "Empowering people, celebrating diversity, and creating a culture where everyone feels valued.",
+    "image": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/8818c5d55c5844bdefd4f3d1721b90ed.png",
+    "backImage": "https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/c46bbd8b593bd9cb6b8790cb61632cd7.png",
+    "link": "https://www.refex.group/careers/",
+    "slug": "life-at-refex",
+    "order": 3,
+    "isActive": true
+  }
+]
+

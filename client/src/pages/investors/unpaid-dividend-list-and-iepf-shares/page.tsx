@@ -1,0 +1,422 @@
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
+import Header from '../../home/components/Header';
+import Footer from '../../home/components/Footer';
+import ScrollToTop from '../../home/components/ScrollToTop';
+import HeroSection from '../components/HeroSection';
+import InvestorSidebar from '../components/InvestorSidebar';
+import { investorsCmsApi } from '../../../services/api';
+
+interface Document {
+  title: string;
+  date?: string;
+  pdfUrl: string;
+  year: string;
+}
+
+interface Content {
+  title: string;
+  subtitle?: string;
+  content: string;
+}
+
+interface PageContent {
+  id?: number;
+  slug: string;
+  title: string;
+  hasYearFilter?: boolean;
+  filterItems?: string[];
+  sections?: Array<{
+    title: string;
+    documents: Document[];
+    contents?: Content[];
+  }>;
+  isActive: boolean;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+
+const getPdfUrl = (pdfUrl: string): string => {
+  if (!pdfUrl) return '';
+  if (pdfUrl.startsWith('http://') || pdfUrl.startsWith('https://')) {
+    return pdfUrl;
+  }
+  if (pdfUrl.startsWith('/')) {
+    return `${API_BASE_URL}${pdfUrl}`;
+  }
+  return `${API_BASE_URL}/${pdfUrl}`;
+};
+
+const UnpaidDividendListPage = () => {
+  const location = useLocation();
+  const [pageContent, setPageContent] = useState<PageContent>({
+    slug: 'unpaid-dividend-list-and-iepf-shares',
+    title: 'Unpaid Dividend List and IEPF Shares',
+    hasYearFilter: true,
+    filterItems: [],
+    sections: [],
+    isActive: true,
+  });
+  const [loading, setLoading] = useState(true);
+  const [selectedYear, setSelectedYear] = useState<string>('');
+
+  useEffect(() => {
+    document.title = 'Unpaid Dividend List and IEPF Shares – Refex Industries Ltd.';
+    
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute('content', 'Unpaid Dividend List and IEPF Shares information for Refex Industries Limited');
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = 'Unpaid Dividend List and IEPF Shares information for Refex Industries Limited';
+      document.head.appendChild(meta);
+    }
+
+    loadPageContent();
+  }, []);
+
+  // Get all available years from CMS filter items or extract from documents
+  const getAllYears = (): string[] => {
+    const filterItems = pageContent.filterItems || (pageContent as any).filter_items || [];
+    if (filterItems && filterItems.length > 0) {
+      return [...filterItems].sort().reverse();
+    }
+    if (!pageContent.sections || pageContent.sections.length === 0) return [];
+    const years = pageContent.sections
+      .flatMap((s) => s.documents.map((d) => d.year))
+      .filter((year: string, index: number, self: string[]) => year && self.indexOf(year) === index)
+      .sort()
+      .reverse();
+    return years;
+  };
+
+  // Filter documents by year
+  const getFilteredDocuments = (documents: Document[]): Document[] => {
+    if (!pageContent.hasYearFilter) return documents;
+    return documents.filter(doc => doc.year === selectedYear);
+  };
+
+  const handleView = (pdfUrl: string) => {
+    window.open(getPdfUrl(pdfUrl), '_blank');
+  };
+
+  const handleDownload = async (pdfUrl: string, title: string) => {
+    try {
+      const filename = `${title.replace(/[^a-zA-Z0-9\s]/g, '')}.pdf`;
+
+      const response = await fetch(`${API_BASE_URL}/api/download-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: getPdfUrl(pdfUrl), filename }),
+      });
+
+      if (!response.ok) throw new Error('Download failed');
+
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(getPdfUrl(pdfUrl), '_blank');
+    }
+  };
+
+  const loadPageContent = async () => {
+    try {
+      setLoading(true);
+      const data = await investorsCmsApi.getPageContentBySlug('unpaid-dividend-list-and-iepf-shares');
+      if (data && data.isActive) {
+        const filterItems = (data.filterItems || (data as any).filter_items || []);
+        const pageData = {
+          ...data,
+          filterItems: filterItems,
+        };
+        setPageContent(pageData);
+        // Set default year to the most recent year if available
+        if (data.hasYearFilter) {
+          const availableYears = filterItems && filterItems.length > 0
+            ? [...filterItems].sort().reverse()
+            : [];
+          if (availableYears.length > 0) {
+            setSelectedYear(availableYears[0]);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load Unpaid Dividend List page:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const parseNodalOfficer = (content: Content | undefined) => {
+    if (!content) {
+      return {
+        name: 'Mr. Ankit Poddar',
+        designation: '(Nodal Officer)',
+        company: 'Refex Industries Limited',
+        address: '2nd Floor, No.313, Refex Towers,',
+        address2: 'Sterling Road, Valluvar Kottam High Road,',
+        address3: 'Nungambakkam, Chennai,',
+        address4: 'Tamil Nadu - 600034',
+        phone: '044 - 3504 0050',
+        email: 'investor.relations@refex.co.in',
+      };
+    }
+
+    const lines = content.content.split('\n').map(line => line.trim()).filter(line => line);
+    const addressLines: string[] = [];
+    let phone = '';
+    let email = '';
+
+    lines.forEach((line) => {
+      if (line.toLowerCase().startsWith('phone:')) {
+        phone = line.replace(/^phone:\s*/i, '').trim();
+      } else if (line.toLowerCase().startsWith('email:')) {
+        email = line.replace(/^email:\s*/i, '').trim();
+      } else {
+        addressLines.push(line);
+      }
+    });
+
+    return {
+      name: content.title || '',
+      designation: content.subtitle || '',
+      company: addressLines[0] || '',
+      address: addressLines[1] || '',
+      address2: addressLines[2] || '',
+      address3: addressLines[3] || '',
+      address4: addressLines[4] || '',
+      phone: phone,
+      email: email,
+    };
+  };
+
+  const sections = pageContent.sections || [];
+  const nodalOfficerContent = sections[0]?.contents?.[0];
+  const nodalOfficer = parseNodalOfficer(nodalOfficerContent);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <Header />
+        <HeroSection title={pageContent.title} />
+        <section className="py-16 bg-[#e7e7e7]">
+          <div className="max-w-7xl mx-auto px-6">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#7cd244]"></div>
+                <p className="mt-4 text-gray-600">Loading Unpaid Dividend List information...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <Footer />
+        <ScrollToTop />
+      </div>
+    );
+  }
+
+  if (!pageContent.isActive) {
+    return null;
+  }
+
+  const availableYears = getAllYears();
+
+  return (
+    <div className="min-h-screen bg-white">
+      <Header />
+      <HeroSection title={pageContent.title} />
+      
+      <section className="py-16 bg-[#e7e7e7]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            {/* Left Sidebar - Links */}
+            <InvestorSidebar currentPath={location.pathname} />
+
+            {/* Right Content */}
+            <div className="lg:col-span-9">
+              {/* Nodal Officer Section */}
+              <div className="mb-8">
+                <h3 
+                  className="font-semibold mb-4"
+                  style={{ color: '#2879b6', fontSize: '20px' }}
+                >
+                  Nodal Officer for the IEPF Authority
+                </h3>
+                <div className="flex items-start gap-6">
+                  <div className="flex-1 text-left">
+                    <h6 className="text-lg font-semibold text-gray-900 mb-3">{nodalOfficer.name}</h6>
+                    <div 
+                      className="space-y-1"
+                      style={{ color: '#484848', fontSize: '16px' }}
+                    >
+                      {nodalOfficer.designation && <p>{nodalOfficer.designation}</p>}
+                      {nodalOfficer.company && <p>{nodalOfficer.company}</p>}
+                      {nodalOfficer.address && <p>{nodalOfficer.address}</p>}
+                      {nodalOfficer.address2 && <p>{nodalOfficer.address2}</p>}
+                      {nodalOfficer.address3 && <p>{nodalOfficer.address3}</p>}
+                      {nodalOfficer.address4 && <p>{nodalOfficer.address4}</p>}
+                      {nodalOfficer.phone && (
+                        <p className="mt-2">
+                          <strong className="font-semibold">Phone:</strong>{' '}
+                          <a 
+                            href={`tel:${nodalOfficer.phone.replace(/[^0-9+]/g, '')}`} 
+                            className="text-[#2879b6] hover:text-[#1e5a8a] transition-colors"
+                          >
+                            {nodalOfficer.phone}
+                          </a>
+                        </p>
+                      )}
+                      {nodalOfficer.email && (
+                        <p>
+                          <strong className="font-semibold">Email:</strong>{' '}
+                          <a 
+                            href={`mailto:${nodalOfficer.email}`} 
+                            className="text-[#2879b6] hover:text-[#1e5a8a] transition-colors"
+                          >
+                            {nodalOfficer.email}
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Year Filter */}
+              {pageContent.hasYearFilter && availableYears.length > 0 && (
+                <div className="mb-6 flex justify-end">
+                  <select 
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(e.target.value)}
+                    className="px-4 py-2 border border-gray-300 bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#7cd244]"
+                  >
+                    {availableYears.map(year => (
+                      <option key={year} value={year}>FY {year}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Sections */}
+              {sections && sections.length > 0 ? (
+                (() => {
+                  // Filter sections to only show those with documents after year filtering
+                  const sectionsWithDocuments = sections
+                    .map((section) => {
+                      const filteredDocs = getFilteredDocuments(section.documents || []);
+                      return {
+                        ...section,
+                        filteredDocs,
+                      };
+                    })
+                    .filter((section) => section.filteredDocs.length > 0);
+
+                  if (sectionsWithDocuments.length === 0) {
+                    return (
+                      <div className="px-6 py-8 text-center text-gray-500">
+                        No documents available for the selected year.
+                      </div>
+                    );
+                  }
+
+                  return sectionsWithDocuments.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="mb-8">
+                      <h3 
+                        className="font-semibold mb-4"
+                        style={{ color: '#2879b6', fontSize: '20px' }}
+                      >
+                        {section.title}
+                      </h3>
+                      <div className="space-y-4">
+                        {section.filteredDocs.map((doc, docIndex) => (
+                          <div 
+                            key={docIndex} 
+                            className="flex items-center gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                          >
+                            <div className="flex-shrink-0">
+                              <img 
+                                src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
+                                alt="PDF" 
+                                className="w-12 h-12"
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p 
+                                className="font-medium mb-1"
+                                style={{ color: '#484848', fontSize: '16px' }}
+                              >
+                                {doc.title}
+                              </p>
+                              {doc.date && (
+                                <p 
+                                  style={{ color: '#484848', fontSize: '16px' }}
+                                >
+                                  Published Date: <time>{doc.date}</time>
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-6 flex-shrink-0">
+                              <button 
+                                onClick={() => handleView(doc.pdfUrl)}
+                                className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                                style={{ color: '#2879b6', fontSize: '16px' }}
+                              >
+                                View
+                                <img 
+                                  src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
+                                  alt="View" 
+                                  style={{ width: '16px', height: '16px' }}
+                                />
+                              </button>
+                              <button 
+                                onClick={() => handleDownload(doc.pdfUrl, doc.title)}
+                                className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                                style={{ color: '#2879b6', fontSize: '16px' }}
+                              >
+                                Download
+                                <svg 
+                                  width="16" 
+                                  height="16" 
+                                  viewBox="0 0 24 24" 
+                                  fill="none" 
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path 
+                                    d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
+                                    fill="#2879b6"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })()
+              ) : (
+                <div className="bg-white p-8 text-center text-gray-500">
+                  No sections available.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+      <ScrollToTop />
+    </div>
+  );
+};
+
+export default UnpaidDividendListPage;
