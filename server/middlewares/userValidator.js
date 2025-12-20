@@ -20,7 +20,7 @@ const validation = {
     //   .withMessage("Password must contain at least 6 characters"),
     check("userType")
       .optional()
-      .isIn([Type.SuperAdmin, Type.Admin, Type.User])
+      .isIn([Type.SuperAdmin, Type.Admin, Type.User, Type.InvestorsCMS])
       .withMessage("Invalid Role type"),
   ],
   validateLogin: [

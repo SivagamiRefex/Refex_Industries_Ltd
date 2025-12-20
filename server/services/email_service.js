@@ -24,87 +24,28 @@ class EmailService {
 
       // Email content
       const mailOptions = {
-        from: process.env.SMTP_USER || 'your-email@gmail.com',
-        to: 'info@refex.co.in',
-        subject: `New Contact Form Submission from ${name}`,
+        from: 'Contact Form <info@refex.co.in>',
+        to: 'raghul.je@refex.co.in',
+        subject: 'Contact Form',
         html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-            <div style="background: linear-gradient(135deg, #2879b6, #7dc244); color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center;">
-              <h2 style="margin: 0; font-size: 24px;">New Contact Form Submission</h2>
-              <p style="margin: 10px 0 0 0; opacity: 0.9;">Refex Life Sciences Website</p>
-            </div>
-            
-            <div style="padding: 30px; background: #f9f9f9;">
-              <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <h3 style="color: #2879b6; margin-top: 0; border-bottom: 2px solid #2879b6; padding-bottom: 10px;">Contact Details</h3>
-                
-                <div style="margin-bottom: 20px;">
-                  <strong style="color: #333; display: inline-block; width: 120px;">Name:</strong>
-                  <span style="color: #666;">${name}</span>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                  <strong style="color: #333; display: inline-block; width: 120px;">Email:</strong>
-                  <span style="color: #666;">${email}</span>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                  <strong style="color: #333; display: inline-block; width: 120px;">Phone:</strong>
-                  <span style="color: #666;">${phone || 'Not provided'}</span>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                  <strong style="color: #333; display: inline-block; width: 120px;">Company:</strong>
-                  <span style="color: #666;">${company || 'Not provided'}</span>
-                </div>
-                
-                <div style="margin-bottom: 20px;">
-                  <strong style="color: #333; display: block; margin-bottom: 10px;">Message:</strong>
-                  <div style="background: #f8f8f8; padding: 15px; border-radius: 5px; border-left: 4px solid #2879b6; color: #555; line-height: 1.6;">
-                    ${message.replace(/\n/g, '<br>')}
-                  </div>
-                </div>
-              </div>
-              
-              <div style="margin-top: 25px; padding: 20px; background: #e8f4fd; border-radius: 8px; border-left: 4px solid #2879b6;">
-                <h4 style="color: #2879b6; margin-top: 0;">Submission Details</h4>
-                <p style="margin: 5px 0; color: #666;">
-                  <strong>Submitted:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-                </p>
-                <p style="margin: 5px 0; color: #666;">
-                  <strong>IP Address:</strong> ${formData.ipAddress || 'Not available'}
-                </p>
-                <p style="margin: 5px 0; color: #666;">
-                  <strong>reCAPTCHA:</strong> ${recaptchaToken ? 'Verified' : 'Not verified'}
-                </p>
-              </div>
-            </div>
-            
-            <div style="text-align: center; padding: 20px; background: #f0f0f0; border-radius: 0 0 10px 10px;">
-              <p style="margin: 0; color: #666; font-size: 14px;">
-                This email was sent from the Refex Life Sciences contact form.
-              </p>
-              <p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">
-                Please respond to the customer's inquiry promptly.
-              </p>
-            </div>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <p>Name: ${name}</p>
+            <p>Email: ${email}</p>
+            <p>Phone: ${phone || 'Not provided'}</p>
+            <p>Sales/Support: ${company || 'Not specified'}</p>
+            <p>Message: ${message}</p>
+            <br>
+            <p>This is a notification that a contact form was submitted on your website (${process.env.SITE_TITLE || 'Refex Industries'} ${process.env.SITE_URL || 'https://refex.co.in'}).</p>
           </div>
         `,
         text: `
-          New Contact Form Submission from Refex Life Sciences Website
-          
-          Contact Details:
-          Name: ${name}
-          Email: ${email}
-          Phone: ${phone || 'Not provided'}
-          Company: ${company || 'Not provided'}
-          
-          Message:
-          ${message}
-          
-          Submitted: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-          IP Address: ${formData.ipAddress || 'Not available'}
-          reCAPTCHA: ${recaptchaToken ? 'Verified' : 'Not verified'}
+Name: ${name}
+Email: ${email}
+Phone: ${phone || 'Not provided'}
+Sales/Support: ${company || 'Not specified'}
+Message: ${message}
+
+This is a notification that a contact form was submitted on your website (${process.env.SITE_TITLE || 'Refex Industries'} ${process.env.SITE_URL || 'https://refex.co.in'}).
         `
       };
 
@@ -128,9 +69,9 @@ class EmailService {
   async sendAutoReply(customerEmail, customerName) {
     try {
       const mailOptions = {
-        from: process.env.SMTP_USER || 'your-email@gmail.com',
+        from: 'Contact Form <info@refex.co.in>',
         to: customerEmail,
-        subject: 'Thank you for contacting Refex Life Sciences',
+        subject: 'Thank you for contacting Refex Industries Lt',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="background: linear-gradient(135deg, #2879b6, #7dc244); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
@@ -145,7 +86,7 @@ class EmailService {
                 </p>
                 
                 <p style="color: #666; font-size: 15px; line-height: 1.6;">
-                  Thank you for reaching out to Refex Life Sciences. We have received your inquiry and our team will review it carefully.
+                  Thank you for reaching out to Refex Industries Ltd. We have received your inquiry, and our team will review it carefully.
                 </p>
                 
                 <p style="color: #666; font-size: 15px; line-height: 1.6;">
@@ -163,19 +104,19 @@ class EmailService {
                 </div>
                 
                 <p style="color: #666; font-size: 15px; line-height: 1.6;">
-                  In the meantime, feel free to explore our website to learn more about our pharmaceutical services and capabilities.
+                  In the meantime, we invite you to explore our website to learn more about our diversified businesses, including Ash Utilization, Green Mobility, Refrigerants, and Wind Energy solutions.
                 </p>
                 
                 <p style="color: #333; font-size: 15px; line-height: 1.6;">
                   Best regards,<br>
-                  <strong>The Refex Life Sciences Team</strong>
+                  <strong>The Refex Industries Ltd Team</strong>
                 </p>
               </div>
             </div>
             
             <div style="text-align: center; padding: 20px; background: #f0f0f0; border-radius: 0 0 10px 10px;">
               <p style="margin: 0; color: #666; font-size: 14px;">
-                Refex Life Sciences | Transforming Healthcare Through Innovation
+                Refex Industries Ltd | Driving Sustainable Industrial Solutions
               </p>
               <p style="margin: 5px 0 0 0; color: #999; font-size: 12px;">
                 2nd Floor, No.313, Refex Towers, Sterling Road, Valluvar Kottam High Road,<br>

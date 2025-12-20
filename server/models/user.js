@@ -39,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
       password: DataTypes.STRING,
       api_key: DataTypes.TEXT,
       user_type: {
-        type: DataTypes.ENUM("Admin", "CHRO", "HR"),
+        type: DataTypes.ENUM("Admin", "CHRO", "HR", "InvestorsCMS"),
       },
       is_active: {
         type: DataTypes.BOOLEAN,

@@ -12,6 +12,11 @@ interface Audio {
   year: string;
   audioUrl: string;
   pdfUrl: string;
+  date?: string;
+  publishedDate?: string;
+  published_date?: string;
+  createdAt?: string;
+  created_at?: string;
 }
 
 interface PageContent {
@@ -29,7 +34,7 @@ interface PageContent {
 
 // Fallback data removed - page now relies entirely on API data
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 // Helper function to get full URL (for both PDFs and audio files)
 const getFullUrl = (url: string): string => {
@@ -146,10 +151,86 @@ const RecordingTranscriptsPage = () => {
     return years;
   };
 
-  // Filter audios by year
+  // Helper function to parse DD/MM/YYYY date format
+  const parseDate = (dateString: string): Date | null => {
+    if (!dateString) return null;
+    
+    // Try DD/MM/YYYY format first
+    const ddmmyyyyMatch = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (ddmmyyyyMatch) {
+      const [, day, month, year] = ddmmyyyyMatch;
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    
+    // Try other common formats
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // Filter and sort audios by year and published date
   const getFilteredAudios = (audios: Audio[]): Audio[] => {
-    if (!pageContent.hasYearFilter) return audios;
-    return audios.filter(audio => audio.year === selectedYear);
+    let filtered = audios;
+    
+    // Filter by year if year filter is enabled
+    if (pageContent.hasYearFilter) {
+      filtered = audios.filter(audio => audio.year === selectedYear);
+    }
+    
+    // Add original index to each audio for tracking (newer audios have higher indices)
+    const audiosWithIndex = filtered.map((audio, index) => ({ ...audio, _originalIndex: index }));
+    
+    // Sort audios:
+    // 1. Audios with publishedDate/date: sort by date descending (recent to old)
+    // 2. Audios without publishedDate: sort by createdAt/created_at descending (recent to old)
+    // 3. Audios without both dates: use original index (higher = newer = appears first)
+    return audiosWithIndex.sort((a, b) => {
+      const aPublishedDate = a.publishedDate || a.published_date || a.date;
+      const bPublishedDate = b.publishedDate || b.published_date || b.date;
+      const aCreatedAt = a.createdAt || a.created_at;
+      const bCreatedAt = b.createdAt || b.created_at;
+      
+      // If both have published dates, sort by published date (descending)
+      if (aPublishedDate && bPublishedDate) {
+        const aDate = parseDate(aPublishedDate);
+        const bDate = parseDate(bPublishedDate);
+        if (aDate && bDate) {
+          return bDate.getTime() - aDate.getTime();
+        }
+      }
+      
+      // If only a has published date, it comes first
+      if (aPublishedDate && !bPublishedDate) {
+        return -1;
+      }
+      
+      // If only b has published date, it comes first
+      if (!aPublishedDate && bPublishedDate) {
+        return 1;
+      }
+      
+      // If neither has published date, sort by created date (descending)
+      if (aCreatedAt && bCreatedAt) {
+        const aDate = parseDate(aCreatedAt);
+        const bDate = parseDate(bCreatedAt);
+        if (aDate && bDate) {
+          return bDate.getTime() - aDate.getTime();
+        }
+        return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime();
+      }
+      
+      // If only a has created date, it comes first
+      if (aCreatedAt && !bCreatedAt) {
+        return -1;
+      }
+      
+      // If only b has created date, it comes first
+      if (!aCreatedAt && bCreatedAt) {
+        return 1;
+      }
+      
+      // If neither has dates, use original array index (higher index = newer = appears first)
+      return (b._originalIndex || 0) - (a._originalIndex || 0);
+    }).map(({ _originalIndex, ...audio }) => audio); // Remove the temporary index field
   };
 
   if (loading) {

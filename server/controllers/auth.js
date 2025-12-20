@@ -40,9 +40,11 @@ const authController = {
         user_data: existingUser,
       });
     } catch (error) {
-      console.log(error.message);
+      console.error("Login error:", error);
+      console.error("Error stack:", error.stack);
       return Response.responseStatus(res, 400, "Bad request", {
         error: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined,
       });
     }
   },

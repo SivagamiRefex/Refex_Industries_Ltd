@@ -46,7 +46,7 @@ export default function AshUtilizationClientsSectionCMS() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const apiBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+      const apiBaseUrl = import.meta.env.VITE_API_URL || "";
       const response = await fetch(`${apiBaseUrl}/api/upload/image`, {
         method: 'POST',
         body: formData,

@@ -11,6 +11,11 @@ interface Document {
   title: string;
   year: string;
   pdfUrl: string;
+  date?: string;
+  publishedDate?: string;
+  published_date?: string;
+  createdAt?: string;
+  created_at?: string;
 }
 
 interface Section {
@@ -28,7 +33,7 @@ interface PageContent {
   isActive: boolean;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 // Helper function to get full PDF URL
 const getPdfUrl = (pdfUrl: string): string => {
@@ -147,6 +152,88 @@ export default function AnnualReturnPage() {
     }
   };
 
+  // Helper function to parse DD/MM/YYYY date format
+  const parseDate = (dateString: string): Date | null => {
+    if (!dateString) return null;
+    
+    // Try DD/MM/YYYY format first
+    const ddmmyyyyMatch = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (ddmmyyyyMatch) {
+      const [, day, month, year] = ddmmyyyyMatch;
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    }
+    
+    // Try other common formats
+    const date = new Date(dateString);
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // Filter and sort documents by year and published date
+  const getFilteredDocuments = (documents: Document[]): Document[] => {
+    let filtered = documents;
+    
+    // Filter by year if year filter is enabled
+    if (pageContent.hasYearFilter && selectedYear) {
+      filtered = documents.filter(doc => doc.year === selectedYear);
+    }
+    
+    // Add original index to each document for tracking (newer documents have higher indices)
+    const documentsWithIndex = filtered.map((doc, index) => ({ ...doc, _originalIndex: index }));
+    
+    // Sort documents:
+    // 1. Documents with publishedDate/date: sort by date descending (recent to old)
+    // 2. Documents without publishedDate: sort by createdAt/created_at descending (recent to old)
+    // 3. Documents without both dates: use original index (higher = newer = appears first)
+    return documentsWithIndex.sort((a, b) => {
+      const aPublishedDate = a.publishedDate || a.published_date || a.date;
+      const bPublishedDate = b.publishedDate || b.published_date || b.date;
+      const aCreatedAt = a.createdAt || a.created_at;
+      const bCreatedAt = b.createdAt || b.created_at;
+      
+      // If both have published dates, sort by published date (descending)
+      if (aPublishedDate && bPublishedDate) {
+        const aDate = parseDate(aPublishedDate);
+        const bDate = parseDate(bPublishedDate);
+        if (aDate && bDate) {
+          return bDate.getTime() - aDate.getTime();
+        }
+      }
+      
+      // If only a has published date, it comes first
+      if (aPublishedDate && !bPublishedDate) {
+        return -1;
+      }
+      
+      // If only b has published date, it comes first
+      if (!aPublishedDate && bPublishedDate) {
+        return 1;
+      }
+      
+      // If neither has published date, sort by created date (descending)
+      if (aCreatedAt && bCreatedAt) {
+        const aDate = parseDate(aCreatedAt);
+        const bDate = parseDate(bCreatedAt);
+        if (aDate && bDate) {
+          return bDate.getTime() - aDate.getTime();
+        }
+        return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime();
+      }
+      
+      // If only a has created date, it comes first
+      if (aCreatedAt && !bCreatedAt) {
+        return -1;
+      }
+      
+      // If only b has created date, it comes first
+      if (!aCreatedAt && bCreatedAt) {
+        return 1;
+      }
+      
+      // If neither has dates, use original array index (higher index = newer = appears first)
+      return (b._originalIndex || 0) - (a._originalIndex || 0);
+    }).map(({ _originalIndex, ...doc }) => doc); // Remove the temporary index field
+  };
+
   // Get year options from CMS
   const yearOptions = pageContent.filterItems && pageContent.filterItems.length > 0
     ? pageContent.filterItems.map(year => ({
@@ -207,10 +294,8 @@ export default function AnnualReturnPage() {
               {/* Sections */}
               {pageContent.sections && pageContent.sections.length > 0 ? (
                 pageContent.sections.map((section, sectionIndex) => {
-                  // Filter documents by selected year
-                  const sectionDocs = pageContent.hasYearFilter && selectedYear
-                    ? section.documents.filter(doc => doc.year === selectedYear)
-                    : section.documents;
+                  // Filter and sort documents by selected year and published date
+                  const sectionDocs = getFilteredDocuments(section.documents);
                   
                   // Don't render section if no documents available
                   if (sectionDocs.length === 0) return null;

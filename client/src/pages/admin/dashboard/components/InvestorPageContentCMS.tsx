@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { investorsCmsApi } from '../../../../services/api';
 import { slugify } from '../../../../utils/slugify';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = "";
 
 interface Document {
   title: string;
@@ -666,7 +666,7 @@ export default function InvestorPageContentCMS() {
       formData.append('audio', file);
 
       // Get API base URL - use the same as in api.ts
-      const apiBaseUrl = 'http://localhost:8080';
+      const apiBaseUrl = "";
       const response = await fetch(`${apiBaseUrl}/api/upload/audio`, {
         method: 'POST',
         body: formData,

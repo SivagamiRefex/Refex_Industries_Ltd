@@ -4,7 +4,6 @@ import ScrollToTop from '../home/components/ScrollToTop';
 import HeroSection from './components/HeroSection';
 import StockQuote from './components/StockQuote';
 import StockChart from './components/StockChart';
-import HistoricalStockQuote from './components/HistoricalStockQuote';
 import RelatedLinks from './components/RelatedLinks';
 
 export default function InvestorsPage() {
@@ -15,7 +14,6 @@ export default function InvestorsPage() {
         <HeroSection />
         <StockQuote />
         <StockChart />
-        <HistoricalStockQuote />
         <RelatedLinks />
       </main>
       <Footer />

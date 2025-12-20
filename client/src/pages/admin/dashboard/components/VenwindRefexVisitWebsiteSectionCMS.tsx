@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { venwindRefexCmsApi } from '../../../../services/api';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = "";
 
 const getImageUrl = (url: string | undefined) => {
   if (!url) return '';

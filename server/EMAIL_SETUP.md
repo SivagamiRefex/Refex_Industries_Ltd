@@ -61,6 +61,29 @@ The contact form now uses:
 POST /api/contact-form
 ```
 
+**Request Body:**
+```json
+{
+  "fullName": "John Doe",
+  "email": "john@example.com",
+  "phone": "1234567890",
+  "salesSupport": "Sales",
+  "message": "Your message here"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Thank you for your message! We will get back to you within 24 hours.",
+  "data": {
+    "messageId": "email-message-id",
+    "timestamp": "2024-01-01T00:00:00.000Z"
+  }
+}
+```
+
 ### 6. Features Implemented
 
 ✅ **Server-side email sending** using Nodemailer

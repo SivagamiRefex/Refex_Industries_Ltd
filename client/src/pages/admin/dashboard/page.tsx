@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,6 +10,13 @@ export default function AdminDashboardPage() {
     await logout();
     navigate('/admin/login');
   };
+
+  // If user is InvestorsCMS, redirect to investors-cms page
+  useEffect(() => {
+    if (user?.user_type === 'InvestorsCMS') {
+      navigate('/admin/dashboard/investors-cms', { replace: true });
+    }
+  }, [user, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -90,6 +98,8 @@ export default function AdminDashboardPage() {
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {user?.user_type !== 'InvestorsCMS' && (
+                <>
               <button
                 onClick={() => navigate('/admin/dashboard/home-cms')}
                 className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
@@ -177,15 +187,6 @@ export default function AdminDashboardPage() {
               </button>
 
               <button
-                onClick={() => navigate('/admin/dashboard/investors-cms')}
-                className="p-4 border-2 border-gray-200 rounded-lg hover:border-amber-500 hover:bg-amber-50 transition-colors text-left"
-              >
-                <i className="ri-line-chart-line text-2xl text-amber-600 mb-2"></i>
-                <h3 className="font-semibold text-gray-900">Manage Investors CMS</h3>
-                <p className="text-sm text-gray-600 mt-1">Edit Investors page content</p>
-              </button>
-
-              <button
                 onClick={() => navigate('/admin/dashboard/header-cms')}
                 className="p-4 border-2 border-gray-200 rounded-lg hover:border-cyan-500 hover:bg-cyan-50 transition-colors text-left"
               >
@@ -213,6 +214,18 @@ export default function AdminDashboardPage() {
                 <i className="ri-settings-3-line text-2xl text-indigo-600 mb-2"></i>
                 <h3 className="font-semibold text-gray-900">Settings</h3>
                 <p className="text-sm text-gray-600 mt-1">Manage system settings</p>
+              </button>
+                </>
+              )}
+
+              {/* Investors CMS - Available to all users */}
+              <button
+                onClick={() => navigate('/admin/dashboard/investors-cms')}
+                className="p-4 border-2 border-gray-200 rounded-lg hover:border-amber-500 hover:bg-amber-50 transition-colors text-left"
+              >
+                <i className="ri-line-chart-line text-2xl text-amber-600 mb-2"></i>
+                <h3 className="font-semibold text-gray-900">Manage Investors CMS</h3>
+                <p className="text-sm text-gray-600 mt-1">Edit Investors page content</p>
               </button>
             </div>
           </div>

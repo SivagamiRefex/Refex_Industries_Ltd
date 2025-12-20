@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { investorsCmsApi } from '../../../../services/api';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = "";
 
 interface Document {
   title: string;

@@ -32,7 +32,7 @@ const slides = [
 
 // For use with your backend API
 async function seedHeroSlides() {
-  const API_BASE_URL = 'http://localhost:8080';
+  const API_BASE_URL = "";
   
   for (const slide of slides) {
     try {

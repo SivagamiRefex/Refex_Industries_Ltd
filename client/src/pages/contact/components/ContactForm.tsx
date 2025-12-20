@@ -80,24 +80,26 @@ export default function ContactForm() {
     setSubmitStatus(null);
 
     try {
-      const formBody = new URLSearchParams({
-        fullName: formData.fullName,
-        email: formData.email,
-        phone: formData.phone,
-        salesSupport: formData.salesSupport,
-        message: formData.message
-      }).toString();
-
-      const endpointUrl = formConfig?.formEndpointUrl || 'https://readdy.ai/api/form/d4ijdrv1vras6h6ft1qg';
+      const API_BASE_URL = import.meta.env.VITE_API_URL || "";
+      const endpointUrl = `${API_BASE_URL}/api/contact-form`;
+      
       const response = await fetch(endpointUrl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: formBody
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          salesSupport: formData.salesSupport,
+          message: formData.message
+        })
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         setSubmitStatus('success');
         setFormData({
           fullName: '',
@@ -109,8 +111,10 @@ export default function ContactForm() {
         setIsCaptchaChecked(false);
       } else {
         setSubmitStatus('error');
+        console.error('Form submission error:', data.message || 'Unknown error');
       }
     } catch (error) {
+      console.error('Form submission error:', error);
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

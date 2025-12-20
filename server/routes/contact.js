@@ -6,7 +6,7 @@ const { body, validationResult } = require('express-validator');
 // Contact form submission endpoint
 router.post('/contact-form', [
   // Validation rules
-  body('name')
+  body('fullName')
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters')
@@ -19,24 +19,19 @@ router.post('/contact-form', [
     .withMessage('Please provide a valid email address'),
   
   body('phone')
-    .optional()
-    .isMobilePhone()
+    .trim()
+    .isLength({ min: 10, max: 15 })
     .withMessage('Please provide a valid phone number'),
   
-  body('company')
+  body('salesSupport')
     .optional()
-    .trim()
-    .isLength({ max: 200 })
-    .withMessage('Company name must be less than 200 characters'),
+    .isIn(['Sales', 'Support'])
+    .withMessage('Invalid selection for Sales/Support'),
   
   body('message')
     .trim()
     .isLength({ min: 10, max: 500 })
-    .withMessage('Message must be between 10 and 500 characters'),
-  
-  body('recaptchaToken')
-    .notEmpty()
-    .withMessage('reCAPTCHA verification is required')
+    .withMessage('Message must be between 10 and 500 characters')
 ], async (req, res) => {
   try {
     // Check for validation errors
@@ -49,19 +44,19 @@ router.post('/contact-form', [
       });
     }
 
-    const { name, email, phone, company, message, recaptchaToken } = req.body;
+    const { fullName, email, phone, salesSupport, message } = req.body;
 
     // Get client IP address
     const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'Unknown';
 
     // Prepare form data for email
     const formData = {
-      name,
+      name: fullName,
       email,
       phone,
-      company,
+      company: salesSupport || 'Not specified',
       message,
-      recaptchaToken,
+      recaptchaToken: 'Verified', // Simple checkbox verification
       ipAddress,
       timestamp: new Date().toISOString()
     };
@@ -71,13 +66,13 @@ router.post('/contact-form', [
 
     // Send auto-reply to customer (optional - you can remove this if not needed)
     try {
-      await emailService.sendAutoReply(email, name);
+      await emailService.sendAutoReply(email, fullName);
     } catch (autoReplyError) {
       console.warn('Auto-reply failed, but main email was sent:', autoReplyError.message);
     }
 
     // Log successful submission
-    console.log(`Contact form submitted successfully by ${name} (${email}) at ${new Date().toISOString()}`);
+    console.log(`Contact form submitted successfully by ${fullName} (${email}) at ${new Date().toISOString()}`);
 
     // Return success response
     res.status(200).json({

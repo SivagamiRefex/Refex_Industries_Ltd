@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
@@ -6,7 +6,8 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -21,6 +22,15 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
 
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
+  }
+
+  // If user is InvestorsCMS, only allow access to investors-cms page
+  if (user?.user_type === 'InvestorsCMS') {
+    const path = location.pathname;
+    if (path !== '/admin/dashboard/investors-cms' && path !== '/admin/dashboard') {
+      // Redirect to investors-cms if trying to access other pages
+      return <Navigate to="/admin/dashboard/investors-cms" replace />;
+    }
   }
 
   return <>{children}</>;

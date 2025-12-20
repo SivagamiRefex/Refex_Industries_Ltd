@@ -91,6 +91,7 @@ app.use("/api/cms/header", require("./routes/header_cms"));
 app.use("/api/cms/footer", require("./routes/footer_cms"));
 app.use("/api/cms/investors", require("./routes/investors_cms"));
 app.use("/api/stock", require("./routes/stock"));
+app.use("/api", require("./routes/contact"));
 
 
 
@@ -432,8 +433,8 @@ app.all("/api/*", (req, res) => {
 });
 
 // Serve static files from the 'client/dist' directory (only if it exists)
-const distPath = path.join(__dirname, "./dist");
-const distIndexPath = path.join(__dirname, "./dist", "index.html");
+const distPath = path.join(__dirname, "../client/out");
+const distIndexPath = path.join(__dirname, "../client/out", "index.html");
 
 if (fs.existsSync(distPath) && fs.existsSync(distIndexPath)) {
   app.use(express.static(distPath));
