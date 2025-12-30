@@ -65,7 +65,7 @@ const defaultNavItems: NavigationItem[] = [
     dropdown: [
       { name: 'Smart ODR', href: '#', hasSubmenu: true, submenu: [
         { name: 'SEBI Circular or ODR', href: 'https://www.sebi.gov.in/legal/master-circulars/aug-2023/online-resolution-of-disputes-in-the-indian-securities-market_75220.html' },
-        { name: 'Online Dispute Resolution', href: 'https://refex.co.in/wp-content/uploads/2025/05/Online-Resolution-Of-Disputes.pdf' },
+        { name: 'Online Dispute Resolution', href: '/uploads/pdfs/Online-Resolution-Of-Disputes.pdf' },
         { name: 'Link to Smart ODR', href: 'https://smartodr.in/login' },
       ]},
     ]
@@ -295,11 +295,11 @@ export default function Header() {
   const logoUrl = headerData?.logoUrl || "https://refex.co.in/wp-content/uploads/2024/07/logo-refex.svg";
   const logoAlt = headerData?.logoAlt || "Refex Industries Limited";
   const showStockInfo = headerData?.showStockInfo !== false;
-  const bsePrice = headerData?.bsePrice || "324.45";
-  const bseChange = headerData?.bseChange || "-0.23%";
+  const bsePrice = headerData?.bsePrice || "";
+  const bseChange = headerData?.bseChange || "";
   const bseChangeIndicator = headerData?.bseChangeIndicator || "down";
-  const nsePrice = headerData?.nsePrice || "323.35";
-  const nseChange = headerData?.nseChange || "-0.51%";
+  const nsePrice = headerData?.nsePrice || "";
+  const nseChange = headerData?.nseChange || "";
   const nseChangeIndicator = headerData?.nseChangeIndicator || "down";
   const contactButtonText = headerData?.contactButtonText || "Contact Us";
   const contactButtonHref = headerData?.contactButtonHref || "/contact/";

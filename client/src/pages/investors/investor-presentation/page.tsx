@@ -9,6 +9,7 @@ import { investorsCmsApi } from '../../../services/api';
 
 interface Document {
   title: string;
+  date?: string; // New standardized name
   publishedDate?: string;
   published_date?: string;
   pdfUrl: string;
@@ -21,6 +22,7 @@ interface PageContent {
   id?: number;
   slug: string;
   title: string;
+  showPublishDate: boolean;
   hasYearFilter: boolean;
   filterItems?: string[];
   sections?: Array<{
@@ -35,6 +37,7 @@ const InvestorPresentation = () => {
   const [pageContent, setPageContent] = useState<PageContent>({
     slug: 'investor-presentation',
     title: 'Investor Presentation',
+    showPublishDate: false,
     hasYearFilter: true,
     filterItems: [],
     sections: [],
@@ -54,9 +57,11 @@ const InvestorPresentation = () => {
       if (data && data.isActive) {
         // Handle both camelCase and snake_case from API response
         const filterItems = (data.filterItems || (data as any).filter_items || []);
+        const showPublishDate = data.showPublishDate !== undefined ? data.showPublishDate : (data as any).show_publish_date;
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: showPublishDate !== undefined ? !!showPublishDate : false,
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -75,6 +80,7 @@ const InvestorPresentation = () => {
       setPageContent({
         slug: 'investor-presentation',
         title: 'Investor Presentation',
+        showPublishDate: false,
         hasYearFilter: true,
         filterItems: [],
         sections: [],
@@ -103,14 +109,14 @@ const InvestorPresentation = () => {
   // Helper function to parse DD/MM/YYYY date format
   const parseDate = (dateString: string): Date | null => {
     if (!dateString) return null;
-    
+
     // Try DD/MM/YYYY format first
     const ddmmyyyyMatch = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (ddmmyyyyMatch) {
       const [, day, month, year] = ddmmyyyyMatch;
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
-    
+
     // Try other common formats
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? null : date;
@@ -119,27 +125,27 @@ const InvestorPresentation = () => {
   // Filter documents by year and sort by published date or created date
   const getFilteredDocuments = (documents: Document[]): Document[] => {
     let filtered = documents;
-    
+
     // Filter by year if year filter is enabled
     if (pageContent.hasYearFilter) {
       filtered = documents.filter(doc => doc.year === selectedYear);
     }
-    
+
     // Add original index to each document for tracking (newer documents have higher indices)
     const documentsWithIndex = filtered.map((doc, index) => ({ ...doc, _originalIndex: index }));
-    
+
     // Sort documents:
     // 1. Documents with publishedDate: sort by publishedDate descending (recent to old)
     // 2. Documents without publishedDate: sort by createdAt/created_at descending (recent to old)
     // 3. Documents without both dates: use original index (higher = newer = appears first)
     return documentsWithIndex.sort((a, b) => {
-      const aPublishedDate = a.publishedDate || a.published_date;
-      const bPublishedDate = b.publishedDate || b.published_date;
+     // const aPublishedDate = a.date || a.publishedDate || a.published_date;
+      //const bPublishedDate = b.date || b.publishedDate || b.published_date;
       const aCreatedAt = a.createdAt || a.created_at;
       const bCreatedAt = b.createdAt || b.created_at;
-      
+
       // If both have published dates, sort by published date (descending)
-      if (aPublishedDate && bPublishedDate) {
+     /* if (aPublishedDate && bPublishedDate) {
         const aDate = parseDate(aPublishedDate);
         const bDate = parseDate(bPublishedDate);
         if (aDate && bDate) {
@@ -147,17 +153,17 @@ const InvestorPresentation = () => {
         }
         // If parsing fails, fall through to next comparison
       }
-      
+
       // If only a has published date, it comes first
       if (aPublishedDate && !bPublishedDate) {
         return -1;
       }
-      
+
       // If only b has published date, it comes first
       if (!aPublishedDate && bPublishedDate) {
         return 1;
-      }
-      
+      }*/
+
       // If neither has published date, sort by created date (descending)
       if (aCreatedAt && bCreatedAt) {
         const aDate = parseDate(aCreatedAt);
@@ -168,17 +174,17 @@ const InvestorPresentation = () => {
         // If parsing fails, try standard Date parsing
         return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime();
       }
-      
+
       // If only a has created date, it comes first
       if (aCreatedAt && !bCreatedAt) {
         return -1;
       }
-      
+
       // If only b has created date, it comes first
       if (!aCreatedAt && bCreatedAt) {
         return 1;
       }
-      
+
       // If neither has dates, use original array index (higher index = newer = appears first)
       return (b._originalIndex || 0) - (a._originalIndex || 0);
     }).map(({ _originalIndex, ...doc }) => doc); // Remove the temporary index field
@@ -191,7 +197,7 @@ const InvestorPresentation = () => {
   const handleDownload = async (pdfUrl: string, title: string) => {
     try {
       const filename = `${title.replace(/[^a-zA-Z0-9\s]/g, '')}.pdf`;
-      
+
       const apiBaseUrl = import.meta.env.VITE_API_URL || "";
       const response = await fetch(`${apiBaseUrl}/api/download-proxy`, {
         method: 'POST',
@@ -221,7 +227,7 @@ const InvestorPresentation = () => {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -247,8 +253,8 @@ const InvestorPresentation = () => {
     <div className="min-h-screen bg-white">
       <Header />
       <HeroSection title={pageContent.title} />
-      
-      <section className="py-16 bg-[#e7e7e7]">
+
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -259,7 +265,7 @@ const InvestorPresentation = () => {
               {/* Year Filter */}
               {pageContent.hasYearFilter && availableYears.length > 0 && (
                 <div className="mb-6 flex justify-end">
-                  <select 
+                  <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
                     className="px-4 py-2 border border-gray-300 bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#7cd244]"
@@ -275,13 +281,13 @@ const InvestorPresentation = () => {
               {pageContent.sections && pageContent.sections.length > 0 ? (
                 pageContent.sections.map((section, sectionIndex) => {
                   const filteredDocs = getFilteredDocuments(section.documents || []);
-                  
+
                   // Don't render section if no documents available
                   if (filteredDocs.length === 0) return null;
-                  
+
                   return (
                     <div key={sectionIndex} className="mb-8">
-                      <h3 
+                      <h3
                         className="font-semibold mb-4"
                         style={{ color: '#2879b6', fontSize: '20px' }}
                       >
@@ -290,60 +296,60 @@ const InvestorPresentation = () => {
                       {filteredDocs.length > 0 ? (
                         <div className="space-y-4">
                           {filteredDocs.map((doc, docIndex) => (
-                            <div 
-                              key={docIndex} 
+                            <div
+                              key={docIndex}
                               className="flex items-center gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
                             >
                               <div className="flex-shrink-0">
-                                <img 
-                                  src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
-                                  alt="PDF" 
+                                <img
+                                  src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg"
+                                  alt="PDF"
                                   className="w-12 h-12"
                                 />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p 
+                                <p
                                   className="font-medium mb-1"
                                   style={{ color: '#484848', fontSize: '16px' }}
                                 >
                                   {doc.title}
                                 </p>
-                                {doc.publishedDate && (
-                                  <p 
+                                {pageContent.showPublishDate && (doc.date || doc.publishedDate) && (
+                                  <p
                                     style={{ color: '#484848', fontSize: '16px' }}
                                   >
-                                    Published Date: <time>{doc.publishedDate}</time>
+                                    Published Date: <time>{doc.date || doc.publishedDate}</time>
                                   </p>
                                 )}
                               </div>
                               <div className="flex items-center gap-6 flex-shrink-0">
-                                <button 
+                                <button
                                   onClick={() => handleView(doc.pdfUrl)}
                                   className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
                                   style={{ color: '#2879b6', fontSize: '16px' }}
                                 >
                                   View
-                                  <img 
-                                    src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
-                                    alt="View" 
+                                  <img
+                                    src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg"
+                                    alt="View"
                                     style={{ width: '16px', height: '16px' }}
                                   />
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => handleDownload(doc.pdfUrl, doc.title)}
                                   className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
                                   style={{ color: '#2879b6', fontSize: '16px' }}
                                 >
                                   Download
-                                  <svg 
-                                    width="16" 
-                                    height="16" 
-                                    viewBox="0 0 24 24" 
-                                    fill="none" 
+                                  <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
                                   >
-                                    <path 
-                                      d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
+                                    <path
+                                      d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z"
                                       fill="#2879b6"
                                     />
                                   </svg>

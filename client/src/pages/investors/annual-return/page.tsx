@@ -31,6 +31,8 @@ interface PageContent {
   filterItems?: string[];
   sections: Section[];
   isActive: boolean;
+  showPublishDate?: boolean;
+  show_publish_date?: boolean;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -81,6 +83,7 @@ export default function AnnualReturnPage() {
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: data.showPublishDate || (data as any).show_publish_date || false,
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -247,7 +250,7 @@ export default function AnnualReturnPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <div className="py-16 bg-[#e7e7e7]">
+        <div className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#7cd244]"></div>
@@ -266,7 +269,7 @@ export default function AnnualReturnPage() {
       <Header />
       <HeroSection title={pageContent.title} />
       
-      <section className="py-16 bg-[#e7e7e7]">
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -331,13 +334,16 @@ export default function AnnualReturnPage() {
                                 >
                                   {doc.title}
                                 </p>
-                                {doc.year && (
-                                  <p 
-                                    style={{ color: '#484848', fontSize: '14px' }}
-                                  >
-                                    Year: {doc.year}
-                                  </p>
-                                )}
+                                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                
+                                  {pageContent.showPublishDate && (doc.date || doc.publishedDate || doc.published_date) && (
+                                    <p 
+                                      style={{ color: '#666', fontSize: '14px' }}
+                                    >
+                                      Published: {doc.date || doc.publishedDate || doc.published_date}
+                                    </p>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center gap-6 flex-shrink-0">
                                 <a

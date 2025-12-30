@@ -2,6 +2,8 @@
 node_modules/
 client/node_modules/
 server/node_modules/
+server/uploads/
+server/wp-content/
 .pnp
 .pnp.js
 

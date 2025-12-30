@@ -26,6 +26,7 @@ const getPdfUrl = (url: string): string => {
 interface Document {
   title: string;
   pdfUrl: string;
+  link?: string;
   date?: string;
   publishedDate?: string;
   published_date?: string;
@@ -63,7 +64,32 @@ export default function CodeOfFairDisclosureUPSIPage() {
       setLoading(true);
       const data = await investorsCmsApi.getPageContentBySlug('code-of-fair-disclosure-upsi');
       if (data && data.isActive) {
-        setPageContent(data);
+        // Standardize sections and documents
+        let sections: any[] = [];
+        if (data.sections && Array.isArray(data.sections) && data.sections.length > 0) {
+          sections = data.sections.map((section: any) => ({
+            ...section,
+            documents: (section.documents || []).map((doc: any) => ({
+              ...doc,
+              pdfUrl: doc.pdfUrl || doc.link || '',
+              date: doc.date || doc.publishedDate || doc.published_date || '',
+            }))
+          }));
+        } else if (data.documents && Array.isArray(data.documents)) {
+          sections = [{
+            title: 'Code of Fair Disclosure UPSI',
+            documents: data.documents.map((doc: any) => ({
+              ...doc,
+              pdfUrl: doc.pdfUrl || doc.link || '',
+              date: doc.date || doc.publishedDate || doc.published_date || '',
+            }))
+          }];
+        }
+
+        setPageContent({
+          ...data,
+          sections
+        });
       }
     } catch (err) {
       console.error('Failed to load code of fair disclosure UPSI page:', err);
@@ -87,7 +113,7 @@ export default function CodeOfFairDisclosureUPSIPage() {
     try {
       const filename = `${title.replace(/[^a-zA-Z0-9\s]/g, '')}.pdf`;
       const resolvedUrl = getPdfUrl(pdfUrl);
-      
+
       // Check if it's a local file (from our server)
       if (resolvedUrl.startsWith(API_BASE_URL)) {
         // For local files, fetch directly
@@ -120,7 +146,7 @@ export default function CodeOfFairDisclosureUPSIPage() {
 
         // Get the blob from response
         const blob = await response.blob();
-        
+
         // Create a blob URL and trigger download
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -129,7 +155,7 @@ export default function CodeOfFairDisclosureUPSIPage() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         // Clean up the blob URL
         window.URL.revokeObjectURL(blobUrl);
       }
@@ -145,7 +171,7 @@ export default function CodeOfFairDisclosureUPSIPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -168,14 +194,14 @@ export default function CodeOfFairDisclosureUPSIPage() {
   // Helper function to parse DD/MM/YYYY date format
   const parseDate = (dateString: string): Date | null => {
     if (!dateString) return null;
-    
+
     // Try DD/MM/YYYY format first
     const ddmmyyyyMatch = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (ddmmyyyyMatch) {
       const [, day, month, year] = ddmmyyyyMatch;
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
-    
+
     // Try other common formats
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? null : date;
@@ -184,13 +210,13 @@ export default function CodeOfFairDisclosureUPSIPage() {
   // Sort documents by published date or created date
   const sortDocuments = (documents: Document[]): Document[] => {
     const documentsWithIndex = documents.map((doc, index) => ({ ...doc, _originalIndex: index }));
-    
+
     return documentsWithIndex.sort((a, b) => {
       const aPublishedDate = a.publishedDate || a.published_date || a.date;
       const bPublishedDate = b.publishedDate || b.published_date || b.date;
       const aCreatedAt = a.createdAt || a.created_at;
       const bCreatedAt = b.createdAt || b.created_at;
-      
+
       // If both have published dates, sort by published date (descending)
       if (aPublishedDate && bPublishedDate) {
         const aDate = parseDate(aPublishedDate);
@@ -199,17 +225,17 @@ export default function CodeOfFairDisclosureUPSIPage() {
           return bDate.getTime() - aDate.getTime();
         }
       }
-      
+
       // If only a has published date, it comes first
       if (aPublishedDate && !bPublishedDate) {
         return -1;
       }
-      
+
       // If only b has published date, it comes first
       if (!aPublishedDate && bPublishedDate) {
         return 1;
       }
-      
+
       // If neither has published date, sort by created date (descending)
       if (aCreatedAt && bCreatedAt) {
         const aDate = parseDate(aCreatedAt);
@@ -219,17 +245,17 @@ export default function CodeOfFairDisclosureUPSIPage() {
         }
         return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime();
       }
-      
+
       // If only a has created date, it comes first
       if (aCreatedAt && !bCreatedAt) {
         return -1;
       }
-      
+
       // If only b has created date, it comes first
       if (!aCreatedAt && bCreatedAt) {
         return 1;
       }
-      
+
       // If neither has dates, use original array index (higher index = newer = appears first)
       return (b._originalIndex || 0) - (a._originalIndex || 0);
     }).map(({ _originalIndex, ...doc }) => doc);
@@ -241,8 +267,8 @@ export default function CodeOfFairDisclosureUPSIPage() {
     <div className="min-h-screen bg-white">
       <Header />
       <HeroSection title={pageContent.title} />
-      
-      <section className="py-16 bg-[#e7e7e7]">
+
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -254,13 +280,13 @@ export default function CodeOfFairDisclosureUPSIPage() {
               {sections && sections.length > 0 ? (
                 sections.map((section, sectionIndex) => {
                   const docs = sortDocuments(section.documents || []);
-                  
+
                   // Don't render section if no documents available
                   if (docs.length === 0) return null;
-                  
+
                   return (
                     <div key={sectionIndex} className="mb-8">
-                      <h3 
+                      <h3
                         className="font-semibold mb-4"
                         style={{ color: '#2879b6', fontSize: '20px' }}
                       >
@@ -269,19 +295,19 @@ export default function CodeOfFairDisclosureUPSIPage() {
                       {docs.length > 0 ? (
                         <div className="space-y-4">
                           {docs.map((doc, docIndex) => (
-                            <div 
-                              key={docIndex} 
+                            <div
+                              key={docIndex}
                               className="flex items-center gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
                             >
                               <div className="flex-shrink-0">
-                                <img 
-                                  src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
-                                  alt="PDF" 
+                                <img
+                                  src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg"
+                                  alt="PDF"
                                   className="w-12 h-12"
                                 />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p 
+                                <p
                                   className="font-medium mb-1"
                                   style={{ color: '#484848', fontSize: '16px' }}
                                 >
@@ -289,33 +315,33 @@ export default function CodeOfFairDisclosureUPSIPage() {
                                 </p>
                               </div>
                               <div className="flex items-center gap-6 flex-shrink-0">
-                                <button 
+                                <button
                                   onClick={() => handleView(doc.pdfUrl)}
                                   className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
                                   style={{ color: '#2879b6', fontSize: '16px' }}
                                 >
                                   View
-                                  <img 
-                                    src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
-                                    alt="View" 
+                                  <img
+                                    src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg"
+                                    alt="View"
                                     style={{ width: '16px', height: '16px' }}
                                   />
                                 </button>
-                                <button 
+                                <button
                                   onClick={() => handleDownload(doc.pdfUrl, doc.title)}
                                   className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
                                   style={{ color: '#2879b6', fontSize: '16px' }}
                                 >
                                   Download
-                                  <svg 
-                                    width="16" 
-                                    height="16" 
-                                    viewBox="0 0 24 24" 
-                                    fill="none" 
+                                  <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
                                     xmlns="http://www.w3.org/2000/svg"
                                   >
-                                    <path 
-                                      d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
+                                    <path
+                                      d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z"
                                       fill="#2879b6"
                                     />
                                   </svg>

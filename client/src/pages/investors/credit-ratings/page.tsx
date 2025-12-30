@@ -39,6 +39,7 @@ interface PageContent {
   title: string;
   hasYearFilter: boolean;
   filterItems?: string[];
+  showPublishDate?: boolean;
   sections?: Array<{
     title: string;
     documents: Document[];
@@ -70,9 +71,11 @@ const CreditRatingsPage = () => {
       if (data && data.isActive) {
         // Handle both camelCase and snake_case from API response
         const filterItems = (data.filterItems || (data as any).filter_items || []);
+        const showPublishDate = data.showPublishDate !== undefined ? data.showPublishDate : (data as any).show_publish_date;
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: showPublishDate !== undefined ? !!showPublishDate : false,
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -205,7 +208,7 @@ const CreditRatingsPage = () => {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -232,7 +235,7 @@ const CreditRatingsPage = () => {
       <Header />
       <HeroSection title={pageContent.title} />
       
-      <section className="py-16 bg-[#e7e7e7]">
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -292,11 +295,11 @@ const CreditRatingsPage = () => {
                                 >
                                   {doc.title}
                                 </p>
-                                {doc.publishedDate && (
+                                {pageContent.showPublishDate && (doc.publishedDate || doc.published_date) && (
                                   <p 
                                     style={{ color: '#484848', fontSize: '16px' }}
                                   >
-                                    Published Date: <time>{doc.publishedDate}</time>
+                                    Published Date: <time>{doc.publishedDate || doc.published_date}</time>
                                   </p>
                                 )}
                               </div>

@@ -26,6 +26,8 @@ interface Document {
   title: string;
   year: string;
   link: string;
+  pdfUrl?: string; // New standardized name
+  date?: string; // New standardized name
   publishedDate?: string;
   published_date?: string;
   createdAt?: string;
@@ -41,6 +43,7 @@ interface PageContent {
   id?: number;
   slug: string;
   title: string;
+  showPublishDate: boolean;
   hasYearFilter: boolean;
   filterItems?: string[];
   sections: Section[];
@@ -52,6 +55,7 @@ const GeneralMeetingUpdatesPage = () => {
   const [pageContent, setPageContent] = useState<PageContent>({
     slug: 'general-meeting-updates',
     title: 'General Meeting Updates',
+    showPublishDate: false,
     hasYearFilter: true,
     filterItems: [],
     sections: [],
@@ -70,7 +74,7 @@ const GeneralMeetingUpdatesPage = () => {
     try {
       const filename = `${title.replace(/[^a-zA-Z0-9\s]/g, '')}.pdf`;
       const resolvedUrl = getPdfUrl(pdfUrl);
-      
+
       // Check if it's a local file (from our server)
       if (resolvedUrl.startsWith(API_BASE_URL)) {
         // For local files, fetch directly
@@ -116,7 +120,7 @@ const GeneralMeetingUpdatesPage = () => {
   const loadSidebarLinks = async () => {
     try {
       const allLinks: Array<{ name: string; href: string }> = [];
-      
+
       // Load related links from CMS
       try {
         const linksData = await investorsCmsApi.getRelatedLinks();
@@ -125,16 +129,16 @@ const GeneralMeetingUpdatesPage = () => {
       } catch (err) {
         console.error('Failed to load related links:', err);
       }
-      
+
       // Load pages from Investor Pages CMS
       try {
         const pagesData = await investorsCmsApi.getAllPageContent();
         const activePages = (pagesData || []).filter((page: any) => page.isActive);
-        
+
         activePages.forEach((page: any) => {
           const pageHref = `/investors/${page.slug}/`;
           const linkExists = allLinks.some(link => link.href === pageHref || link.href.replace(/\/$/, '') === pageHref.replace(/\/$/, ''));
-          
+
           if (!linkExists) {
             allLinks.push({ name: page.title, href: pageHref });
           }
@@ -142,7 +146,7 @@ const GeneralMeetingUpdatesPage = () => {
       } catch (err) {
         console.error('Failed to load investor pages:', err);
       }
-      
+
       setSidebarLinks(allLinks);
     } catch (err) {
       console.error('Failed to load sidebar links:', err);
@@ -156,9 +160,11 @@ const GeneralMeetingUpdatesPage = () => {
       if (data && data.isActive) {
         // Handle both camelCase and snake_case from API response
         const filterItems = (data.filterItems || (data as any).filter_items || []);
+        const showPublishDate = data.showPublishDate !== undefined ? data.showPublishDate : (data as any).show_publish_date;
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: showPublishDate !== undefined ? !!showPublishDate : false,
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -167,10 +173,10 @@ const GeneralMeetingUpdatesPage = () => {
             ? [...filterItems].sort().reverse()
             : (data.sections && data.sections.length > 0
               ? (data.sections as Section[])
-                  .flatMap((s: Section) => s.documents.map((d: Document) => d.year))
-                  .filter((year: string, index: number, self: string[]) => year && self.indexOf(year) === index)
-                  .sort()
-                  .reverse()
+                .flatMap((s: Section) => s.documents.map((d: Document) => d.year))
+                .filter((year: string, index: number, self: string[]) => year && self.indexOf(year) === index)
+                .sort()
+                .reverse()
               : []);
           if (availableYears.length > 0) {
             setSelectedYear(availableYears[0]);
@@ -183,6 +189,7 @@ const GeneralMeetingUpdatesPage = () => {
       setPageContent({
         slug: 'general-meeting-updates',
         title: 'General Meeting Updates',
+        showPublishDate: false,
         hasYearFilter: true,
         filterItems: [],
         sections: [],
@@ -193,17 +200,21 @@ const GeneralMeetingUpdatesPage = () => {
     }
   };
 
+  const sortedSections = [...pageContent.sections].sort((a, b) =>
+    a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })
+  );
+
   // Helper function to parse DD/MM/YYYY date format
   const parseDate = (dateString: string): Date | null => {
     if (!dateString) return null;
-    
+
     // Try DD/MM/YYYY format first
     const ddmmyyyyMatch = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (ddmmyyyyMatch) {
       const [, day, month, year] = ddmmyyyyMatch;
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
-    
+
     // Try other common formats
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? null : date;
@@ -211,22 +222,22 @@ const GeneralMeetingUpdatesPage = () => {
 
   const filterDocuments = (docs: Document[]) => {
     let filtered = docs.filter(doc => doc.year === selectedYear);
-    
+
     // Add original index to each document for tracking (newer documents have higher indices)
     const documentsWithIndex = filtered.map((doc, index) => ({ ...doc, _originalIndex: index }));
-    
+
     // Sort documents:
     // 1. Documents with publishedDate: sort by publishedDate descending (recent to old)
     // 2. Documents without publishedDate: sort by createdAt/created_at descending (recent to old)
     // 3. Documents without both dates: use original index (higher = newer = appears first)
     return documentsWithIndex.sort((a, b) => {
-      const aPublishedDate = a.publishedDate || a.published_date;
-      const bPublishedDate = b.publishedDate || b.published_date;
+    //  const aPublishedDate = a.date || a.publishedDate || a.published_date;
+     // const bPublishedDate = b.date || b.publishedDate || b.published_date;
       const aCreatedAt = a.createdAt || a.created_at;
       const bCreatedAt = b.createdAt || b.created_at;
-      
+
       // If both have published dates, sort by published date (descending)
-      if (aPublishedDate && bPublishedDate) {
+      /*if (aPublishedDate && bPublishedDate) {
         const aDate = parseDate(aPublishedDate);
         const bDate = parseDate(bPublishedDate);
         if (aDate && bDate) {
@@ -234,17 +245,17 @@ const GeneralMeetingUpdatesPage = () => {
         }
         // If parsing fails, fall through to next comparison
       }
-      
+
       // If only a has published date, it comes first
       if (aPublishedDate && !bPublishedDate) {
         return -1;
       }
-      
+
       // If only b has published date, it comes first
       if (!aPublishedDate && bPublishedDate) {
         return 1;
-      }
-      
+      }*/
+
       // If neither has published date, sort by created date (descending)
       if (aCreatedAt && bCreatedAt) {
         const aDate = parseDate(aCreatedAt);
@@ -255,17 +266,17 @@ const GeneralMeetingUpdatesPage = () => {
         // If parsing fails, try standard Date parsing
         return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime();
       }
-      
+
       // If only a has created date, it comes first
       if (aCreatedAt && !bCreatedAt) {
         return -1;
       }
-      
+
       // If only b has created date, it comes first
       if (!aCreatedAt && bCreatedAt) {
         return 1;
       }
-      
+
       // If neither has dates, use original array index (higher index = newer = appears first)
       return (b._originalIndex || 0) - (a._originalIndex || 0);
     }).map(({ _originalIndex, ...doc }) => doc); // Remove the temporary index field
@@ -273,12 +284,12 @@ const GeneralMeetingUpdatesPage = () => {
 
   const DocumentSection = ({ title, documents }: { title: string; documents: Document[] }) => {
     const filteredDocs = filterDocuments(documents);
-    
+
     if (filteredDocs.length === 0) return null;
 
     return (
       <div className="mb-8">
-        <h3 
+        <h3
           className="font-semibold mb-4"
           style={{ color: '#2879b6', fontSize: '20px' }}
         >
@@ -286,67 +297,67 @@ const GeneralMeetingUpdatesPage = () => {
         </h3>
         <div className="space-y-4">
           {filteredDocs.map((doc, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="flex items-center gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
             >
               <div className="flex-shrink-0">
-                <img 
-                  src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
-                  alt="Document" 
+                <img
+                  src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg"
+                  alt="Document"
                   className="w-12 h-12"
                 />
               </div>
               <div className="flex-1 min-w-0">
-                <p 
+                <p
                   className="font-medium mb-1"
                   style={{ color: '#484848', fontSize: '16px' }}
                 >
                   {doc.title}
                 </p>
-                {doc.publishedDate && (
-                  <p 
+                {(pageContent.showPublishDate && (doc.date || doc.publishedDate)) && (
+                  <p
                     style={{ color: '#484848', fontSize: '16px' }}
                   >
-                    Published Date: <time>{doc.publishedDate}</time>
+                    Published Date: <time>{doc.date || doc.publishedDate}</time>
                   </p>
                 )}
               </div>
-                              <div className="flex items-center gap-6 flex-shrink-0">
-                                <a
-                                  href={getPdfUrl(doc.link)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
-                                  style={{ color: '#2879b6', fontSize: '16px' }}
-                                >
-                                  View
-                                  <img 
-                                    src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
-                                    alt="View" 
-                                    style={{ width: '16px', height: '16px' }}
-                                  />
-                                </a>
-                                <button
-                                  onClick={() => handleDownload(doc.link, doc.title)}
-                                  className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
-                                  style={{ color: '#2879b6', fontSize: '16px' }}
-                                >
-                                  Download
-                                  <svg 
-                                    width="16" 
-                                    height="16" 
-                                    viewBox="0 0 24 24" 
-                                    fill="none" 
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path 
-                                      d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
-                                      fill="#2879b6"
-                                    />
-                                  </svg>
-                                </button>
-                              </div>
+              <div className="flex items-center gap-6 flex-shrink-0">
+                <a
+                  href={getPdfUrl(doc.pdfUrl || doc.link)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                  style={{ color: '#2879b6', fontSize: '16px' }}
+                >
+                  View
+                  <img
+                    src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg"
+                    alt="View"
+                    style={{ width: '16px', height: '16px' }}
+                  />
+                </a>
+                <button
+                  onClick={() => handleDownload(doc.link, doc.title)}
+                  className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                  style={{ color: '#2879b6', fontSize: '16px' }}
+                >
+                  Download
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z"
+                      fill="#2879b6"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
           ))}
         </div>
@@ -383,8 +394,8 @@ const GeneralMeetingUpdatesPage = () => {
     <div className="min-h-screen bg-white">
       <Header />
       <HeroSection title="General Meeting Updates" />
-      
-      <section className="py-16 bg-[#e7e7e7]">
+
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Sidebar Navigation */}
@@ -398,14 +409,12 @@ const GeneralMeetingUpdatesPage = () => {
                         <li key={index}>
                           <Link
                             to={link.href}
-                            className={`block px-6 py-3 text-sm transition-colors cursor-pointer ${
-                              index < sidebarLinks.length - 1 ? 'border-b border-gray-300' : ''
-                            } ${
-                              isActive
-                                ? 'text-[#7cd244] font-medium'
-                                : 'text-gray-700 hover:bg-gray-50'
-                            }`}
-                            style={isActive ? { borderLeft: '3px solid #7cd244' } : {}}
+                            className={`block w-72 px-6 py-3 text-base transition-colors cursor-pointer
+                         ${isActive
+                                ? 'text-[#61CE70] font-medium'
+                                : 'text-[#1f1f1f] hover:text-[#61CE70]'
+                              }`}
+                           // style={isActive ? { borderLeft: '3px solid #61CE70' } : {}}
                           >
                             {link.name}
                           </Link>
@@ -436,10 +445,14 @@ const GeneralMeetingUpdatesPage = () => {
               )}
 
               <div>
-                {pageContent.sections.map((section, index) => (
-                  <DocumentSection key={index} title={section.title} documents={section.documents} />
-                ))}
-                
+              {sortedSections.map((section, index) => (
+  <DocumentSection
+    key={index}
+    title={section.title}
+    documents={section.documents}
+  />
+))}
+
                 {selectedYear && filterDocuments(allDocuments).length === 0 && (
                   <div className="text-center py-12">
                     <p className="text-gray-500 text-base">No documents available for FY {selectedYear}</p>

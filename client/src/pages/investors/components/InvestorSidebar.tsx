@@ -97,10 +97,10 @@ export default function InvestorSidebar({ currentPath }: InvestorSidebarProps) {
               <Link
                 key={link.id || link.name}
                 to={linkPath}
-                className={`block px-4 py-3 text-sm transition-colors cursor-pointer border-b border-gray-200 ${
+                className={`block w-72 px-4 py-3 text-base transition-colors cursor-pointer  ${
                   isActive
-                    ? 'bg-white text-[#7cd244] border-l-4 border-l-[#7cd244]'
-                    : 'bg-white text-gray-700 hover:text-[#7cd244] border-l-4 border-l-transparent hover:border-l-[#7cd244]'
+                    ? 'bg-white text-[#61CE70]'
+                    : 'bg-white text-[#1f1f1f] hover:text-[#61CE70]'
                 }`}
               >
                 {link.name}

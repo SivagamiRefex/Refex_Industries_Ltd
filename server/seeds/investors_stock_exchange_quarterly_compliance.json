@@ -16,6 +16,8 @@
     "2015-16"
   ],
   "isActive": true,
+  "showPublishDate": true,
+  "showCmsPublishDate": true,
   "sections": [
     {
       "title": "Shareholding Pattern",

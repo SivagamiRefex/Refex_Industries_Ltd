@@ -25,6 +25,7 @@ interface PageContent {
     title: string;
     documents: Document[];
   }>;
+  showPublishDate: boolean;
   isActive: boolean;
 }
 
@@ -53,6 +54,7 @@ export default function MonitoringAgencyReportPage() {
     slug: 'monitoring-agency-report',
     title: 'Monitoring Agency Report',
     sections: [],
+    showPublishDate: false,
     isActive: true,
   });
   const [loading, setLoading] = useState(true);
@@ -78,7 +80,10 @@ export default function MonitoringAgencyReportPage() {
       setLoading(true);
       const data = await investorsCmsApi.getPageContentBySlug('monitoring-agency-report');
       if (data && data.isActive) {
-        setPageContent(data);
+        setPageContent({
+          ...data,
+          showPublishDate: !!(data.showPublishDate || (data as any).show_publish_date),
+        });
       }
     } catch (err) {
       console.error('Failed to load Monitoring Agency Report page:', err);
@@ -87,6 +92,7 @@ export default function MonitoringAgencyReportPage() {
         slug: 'monitoring-agency-report',
         title: 'Monitoring Agency Report',
         sections: [],
+        showPublishDate: false,
         isActive: true,
       });
     } finally {
@@ -205,7 +211,7 @@ export default function MonitoringAgencyReportPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -230,7 +236,7 @@ export default function MonitoringAgencyReportPage() {
       <Header />
       <HeroSection title={pageContent.title} />
       
-      <section className="py-16 bg-[#e7e7e7]">
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -275,6 +281,13 @@ export default function MonitoringAgencyReportPage() {
                                 >
                                   {doc.title}
                                 </p>
+                                {pageContent.showPublishDate && (doc.date || doc.publishedDate || doc.published_date) && (
+                                  <p 
+                                    style={{ color: '#484848', fontSize: '16px' }}
+                                  >
+                                    Published Date: <time>{doc.date || doc.publishedDate || doc.published_date}</time>
+                                  </p>
+                                )}
                               </div>
                               <div className="flex items-center gap-6 flex-shrink-0">
                                 <button 

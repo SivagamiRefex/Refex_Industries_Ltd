@@ -50,7 +50,7 @@ export default function VenwindRefexTechnicalSpecsSectionCMS() {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch('http://localhost:8080/api/upload/image', {
+      const response = await fetch(`${API_BASE_URL}/api/upload/image`, {
         method: 'POST',
         body: formData,
       });

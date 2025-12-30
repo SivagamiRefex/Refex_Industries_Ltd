@@ -53,14 +53,43 @@ const fallbackPersonnel: KeyPersonnel[] = [
   },
 ];
 
+interface PageContent {
+  id?: number;
+  slug: string;
+  title: string;
+  isActive: boolean;
+}
+
 export default function KeyManagerialPersonnelPage() {
   const location = useLocation();
+  const [pageContent, setPageContent] = useState<PageContent>({
+    slug: 'key-managerial-personnel',
+    title: 'Key Managerial Personnel',
+    isActive: true,
+  });
   const [personnel, setPersonnel] = useState<KeyPersonnel[]>(fallbackPersonnel);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    loadPageContent();
     loadPersonnel();
   }, []);
+
+  const loadPageContent = async () => {
+    try {
+      const data = await investorsCmsApi.getPageContentBySlug('key-managerial-personnel');
+      if (data && (data.isActive || (data as any).is_active)) {
+        setPageContent({
+          slug: data.slug || 'key-managerial-personnel',
+          title: data.title || 'Key Managerial Personnel',
+          isActive: true,
+        });
+      }
+    } catch (err) {
+      console.error('Failed to load page content:', err);
+      // Use default values on error
+    }
+  };
 
   const loadPersonnel = async () => {
     try {
@@ -91,7 +120,7 @@ export default function KeyManagerialPersonnelPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <div className="py-16 bg-[#e7e7e7]">
+        <div className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#7cd244]"></div>
@@ -110,7 +139,7 @@ export default function KeyManagerialPersonnelPage() {
       <Header />
       <HeroSection title={pageContent.title} />
       
-      <section className="py-16 bg-[#e7e7e7]">
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}

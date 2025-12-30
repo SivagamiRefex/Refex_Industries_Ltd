@@ -39,6 +39,8 @@ interface InvestorPage {
   filterItems?: string[];
   sections: Section[];
   isActive: boolean;
+  showPublishDate: boolean;
+  showCmsPublishDate: boolean;
 }
 
 export default function InvestorPageContentCMS() {
@@ -51,6 +53,8 @@ export default function InvestorPageContentCMS() {
     filterItems: [],
     sections: [],
     isActive: true,
+    showPublishDate: false,
+    showCmsPublishDate: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -71,6 +75,7 @@ export default function InvestorPageContentCMS() {
   const [uploadingAudio, setUploadingAudio] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [uploadingAudioPdf, setUploadingAudioPdf] = useState(false);
+  const [isManualPdfUrl, setIsManualPdfUrl] = useState(false);
 
   const handleDocumentPdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -198,6 +203,9 @@ export default function InvestorPageContentCMS() {
         const pageData = {
           ...data,
           filterItems: Array.isArray(filterItems) ? filterItems : [],
+          showPublishDate: data.showPublishDate || (data as any).show_publish_date || false,
+          showCmsPublishDate: data.showCmsPublishDate || (data as any).show_cms_publish_date || false,
+          isActive: data.isActive !== undefined ? data.isActive : (data as any).is_active !== undefined ? (data as any).is_active : true,
         };
         setPageContent(pageData);
       }
@@ -217,7 +225,7 @@ export default function InvestorPageContentCMS() {
     }
 
     const slug = slugify(newPageTitle);
-    
+
     // Check if slug already exists
     const existingPage = pages.find(p => p.slug === slug);
     if (existingPage) {
@@ -235,16 +243,18 @@ export default function InvestorPageContentCMS() {
         filterItems: [],
         sections: [],
         isActive: true,
+        showPublishDate: false,
+        showCmsPublishDate: false,
       };
       await investorsCmsApi.createPageContent(newPage);
-      
+
       // Automatically create a related link for this page
       try {
         const href = `/investors/${slug}/`;
         // Check if link already exists
         const existingLinks = await investorsCmsApi.getRelatedLinks();
         const linkExists = existingLinks.some((link: any) => link.href === href);
-        
+
         if (!linkExists) {
           await investorsCmsApi.createRelatedLink({
             name: newPageTitle.trim(),
@@ -260,7 +270,7 @@ export default function InvestorPageContentCMS() {
         console.error('Failed to create related link:', linkErr);
         setSuccess('Page created successfully, but failed to create related link: ' + (linkErr.message || 'Unknown error'));
       }
-      
+
       setNewPageTitle('');
       setShowNewPageForm(false);
       await loadAllPages();
@@ -279,14 +289,17 @@ export default function InvestorPageContentCMS() {
     try {
       setError('');
       setSuccess('');
-      
+
       const saveData = {
         ...pageContent,
         filterItems: pageContent.filterItems || [],
+        show_publish_date: pageContent.showPublishDate,
+        show_cms_publish_date: pageContent.showCmsPublishDate,
+        is_active: pageContent.isActive,
       };
-      
+
       const isNewPage = !pageContent.id;
-      
+
       if (pageContent.id) {
         await investorsCmsApi.updatePageContent(pageContent.id, saveData);
         setSuccess('Page updated successfully');
@@ -294,7 +307,7 @@ export default function InvestorPageContentCMS() {
         await investorsCmsApi.createPageContent(saveData);
         setSuccess('Page created successfully');
       }
-      
+
       // Ensure related link exists for this page
       if (pageContent.slug && pageContent.isActive) {
         try {
@@ -305,7 +318,7 @@ export default function InvestorPageContentCMS() {
             const pageHref = href.replace(/\/$/, '');
             return linkHref === pageHref;
           });
-          
+
           if (!linkExists) {
             await investorsCmsApi.createRelatedLink({
               name: pageContent.title,
@@ -324,7 +337,7 @@ export default function InvestorPageContentCMS() {
           // Don't fail the whole operation if link creation fails
         }
       }
-      
+
       await loadPageContent(pageContent.slug);
       await loadAllPages();
       setTimeout(() => setSuccess(''), 5000);
@@ -350,6 +363,8 @@ export default function InvestorPageContentCMS() {
           filterItems: [],
           sections: [],
           isActive: true,
+          showPublishDate: false,
+          showCmsPublishDate: false,
         });
       }
       setTimeout(() => setSuccess(''), 3000);
@@ -390,7 +405,7 @@ export default function InvestorPageContentCMS() {
     }
 
     const filterItems = [...(pageContent.filterItems || [])];
-    
+
     if (filterItems.includes(editingFilterItem.trim()) && editingFilterIndex < 0) {
       setError('This filter item already exists');
       return;
@@ -446,7 +461,7 @@ export default function InvestorPageContentCMS() {
 
     const updatedSections = [...pageContent.sections];
     const existingIndex = updatedSections.findIndex(s => s.title === editingSection.title && s !== editingSection);
-    
+
     if (existingIndex >= 0) {
       setError('A section with this title already exists');
       return;
@@ -478,6 +493,7 @@ export default function InvestorPageContentCMS() {
       documentIndex: -1,
     });
     setShowDocumentForm(true);
+    setIsManualPdfUrl(false);
     setError('');
   };
 
@@ -489,6 +505,7 @@ export default function InvestorPageContentCMS() {
       documentIndex,
     });
     setShowDocumentForm(true);
+    setIsManualPdfUrl(false);
     setError('');
   };
 
@@ -588,7 +605,7 @@ export default function InvestorPageContentCMS() {
     if (!updatedSections[editingContent.sectionIndex].contents) {
       updatedSections[editingContent.sectionIndex].contents = [];
     }
-    
+
     if (editingContent.contentIndex >= 0) {
       updatedSections[editingContent.sectionIndex].contents![editingContent.contentIndex] = content;
     } else {
@@ -716,7 +733,7 @@ export default function InvestorPageContentCMS() {
     if (!updatedSections[editingAudio.sectionIndex].audios) {
       updatedSections[editingAudio.sectionIndex].audios = [];
     }
-    
+
     if (editingAudio.audioIndex >= 0) {
       updatedSections[editingAudio.sectionIndex].audios![editingAudio.audioIndex] = audio;
     } else {
@@ -818,11 +835,10 @@ export default function InvestorPageContentCMS() {
                 pages.map((page) => (
                   <div
                     key={page.id || page.slug}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                      selectedPage?.id === page.id || selectedPage?.slug === page.slug
-                        ? 'bg-blue-100 border-2 border-blue-500'
-                        : 'bg-white border border-gray-200 hover:bg-gray-50'
-                    }`}
+                    className={`p-3 rounded-lg cursor-pointer transition-colors ${selectedPage?.id === page.id || selectedPage?.slug === page.slug
+                      ? 'bg-blue-100 border-2 border-blue-500'
+                      : 'bg-white border border-gray-200 hover:bg-gray-50'
+                      }`}
                     onClick={() => setSelectedPage(page)}
                   >
                     <div className="flex justify-between items-start">
@@ -902,6 +918,30 @@ export default function InvestorPageContentCMS() {
                     />
                     <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
                       Active
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="showCmsPublishDate"
+                      checked={pageContent.showCmsPublishDate}
+                      onChange={(e) => setPageContent({ ...pageContent, showCmsPublishDate: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="showCmsPublishDate" className="ml-2 block text-sm text-gray-900">
+                      Show Published Date field in CMS
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="showPublishDate"
+                      checked={pageContent.showPublishDate}
+                      onChange={(e) => setPageContent({ ...pageContent, showPublishDate: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="showPublishDate" className="ml-2 block text-sm text-gray-900">
+                      Show Publish Dates on Website
                     </label>
                   </div>
                 </div>
@@ -1291,11 +1331,10 @@ export default function InvestorPageContentCMS() {
                         />
                         <label
                           htmlFor="audioTranscriptPdfUpload"
-                          className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${
-                            uploadingAudioPdf
-                              ? 'bg-gray-400 text-white cursor-not-allowed'
-                              : 'bg-green-600 text-white hover:bg-green-700'
-                          }`}
+                          className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${uploadingAudioPdf
+                            ? 'bg-gray-400 text-white cursor-not-allowed'
+                            : 'bg-green-600 text-white hover:bg-green-700'
+                            }`}
                         >
                           {uploadingAudioPdf ? 'Uploading...' : 'Upload PDF'}
                         </label>
@@ -1424,21 +1463,23 @@ export default function InvestorPageContentCMS() {
                         placeholder="e.g., Un-Audited Financial Results – Q2 FY26"
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Published Date *
-                      </label>
-                      <input
-                        type="text"
-                        className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        value={editingDocument.document.date}
-                        onChange={(e) => setEditingDocument({
-                          ...editingDocument,
-                          document: { ...editingDocument.document, date: e.target.value }
-                        })}
-                        placeholder="e.g., 04/11/2025"
-                      />
-                    </div>
+                    {pageContent.showCmsPublishDate && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Published Date
+                        </label>
+                        <input
+                          type="text"
+                          className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          value={editingDocument.document.date}
+                          onChange={(e) => setEditingDocument({
+                            ...editingDocument,
+                            document: { ...editingDocument.document, date: e.target.value }
+                          })}
+                          placeholder="e.g., 04/11/2025"
+                        />
+                      </div>
+                    )}
                     {pageContent.hasYearFilter && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1457,34 +1498,63 @@ export default function InvestorPageContentCMS() {
                       </div>
                     )}
                     <div className={pageContent.hasYearFilter ? '' : 'md:col-span-2'}>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        PDF Document *
-                      </label>
-                      <div className="flex items-center gap-4 mb-2">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                          PDF Document *
+                        </label>
+                        <div className="flex items-center">
+                          <span className="mr-2 text-xs text-gray-600">Manual URL</span>
+                          <button
+                            type="button"
+                            onClick={() => setIsManualPdfUrl(!isManualPdfUrl)}
+                            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isManualPdfUrl ? 'bg-blue-600' : 'bg-gray-200'
+                              }`}
+                          >
+                            <span
+                              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isManualPdfUrl ? 'translate-x-5' : 'translate-x-0'
+                                }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+
+                      {isManualPdfUrl ? (
                         <input
-                          type="file"
-                          accept="application/pdf"
-                          onChange={handleDocumentPdfUpload}
-                          className="hidden"
-                          id="pageContentDocPdfUpload"
-                          disabled={uploadingPdf}
+                          type="text"
+                          className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                          value={editingDocument.document.pdfUrl}
+                          onChange={(e) => setEditingDocument({
+                            ...editingDocument,
+                            document: { ...editingDocument.document, pdfUrl: e.target.value }
+                          })}
+                          placeholder="https://example.com/document.pdf"
                         />
-                        <label
-                          htmlFor="pageContentDocPdfUpload"
-                          className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${
-                            uploadingPdf
+                      ) : (
+                        <div className="flex items-center gap-4 mb-2">
+                          <input
+                            type="file"
+                            accept="application/pdf"
+                            onChange={handleDocumentPdfUpload}
+                            className="hidden"
+                            id="pageContentDocPdfUpload"
+                            disabled={uploadingPdf}
+                          />
+                          <label
+                            htmlFor="pageContentDocPdfUpload"
+                            className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${uploadingPdf
                               ? 'bg-gray-400 text-white cursor-not-allowed'
                               : 'bg-green-600 text-white hover:bg-green-700'
-                          }`}
-                        >
-                          {uploadingPdf ? 'Uploading...' : 'Upload PDF'}
-                        </label>
-                        {editingDocument.document.pdfUrl && (
-                          <span className="text-sm text-gray-600 truncate max-w-md">
-                            {editingDocument.document.pdfUrl}
-                          </span>
-                        )}
-                      </div>
+                              }`}
+                          >
+                            {uploadingPdf ? 'Uploading...' : 'Upload PDF'}
+                          </label>
+                          {editingDocument.document.pdfUrl && (
+                            <span className="text-sm text-gray-600 truncate max-w-md">
+                              {editingDocument.document.pdfUrl}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     <div className="md:col-span-2 flex gap-3">
                       <button

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+//import { Link } from 'react-router-dom';
 
 interface SidebarProps {
   activePage?: string;
@@ -37,11 +37,11 @@ const investorLinks = [
   { name: 'Scheme of Amalgamation / Arrangement', href: '/investors/scheme-of-amalgamation-arrangement', slug: 'scheme-of-amalgamation-arrangement' },
 ];
 
-const sidebarItems = [
+/*const sidebarItems = [
   { label: 'CSR Activities', path: '/investors/csr-activities' },
   { label: 'Charter Documents', path: '/investors/charter-documents' },
   { label: 'Scheme of Amalgamation / Arrangement', path: '/investors/scheme-of-amalgamation-arrangement' }
-];
+];*/
 
 export default function Sidebar({ activePage }: SidebarProps) {
   return (
@@ -52,10 +52,10 @@ export default function Sidebar({ activePage }: SidebarProps) {
             <a
               key={index}
               href={link.href}
-              className={`block px-4 py-3 text-sm transition-colors cursor-pointer border-b-2 ${
+              className={`block  w-72 px-4 py-3 text-base transition-colors cursor-pointer border-b-2 ${
                 activePage === link.slug
-                  ? 'bg-gray-50 text-[#7cd244] border-[#7cd244]'
-                  : 'text-gray-700 hover:bg-gray-50 hover:text-[#7cd244] border-transparent hover:border-[#7cd244]'
+                  ? 'bg-gray-50 text-[#61ce70] border-[#61CE70]'
+                  : 'text-gray-700 hover:bg-gray-50 hover:text-[#61CE70] border-transparent hover:border-[#61CE70]'
               }`}
             >
               {link.name}

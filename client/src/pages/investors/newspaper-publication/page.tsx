@@ -27,6 +27,7 @@ interface PageContent {
     title: string;
     documents: Document[];
   }>;
+  showPublishDate: boolean;
   isActive: boolean;
 }
 
@@ -55,6 +56,7 @@ export default function NewspaperPublicationPage() {
     hasYearFilter: true,
     filterItems: [],
     sections: [],
+    showPublishDate: false,
     isActive: true,
   });
   const [loading, setLoading] = useState(true);
@@ -124,13 +126,13 @@ export default function NewspaperPublicationPage() {
     // 2. Documents without publishedDate: sort by createdAt/created_at descending (recent to old)
     // 3. Documents without both dates: use original index (higher = newer = appears first)
     return documentsWithIndex.sort((a, b) => {
-      const aPublishedDate = a.publishedDate || a.published_date;
-      const bPublishedDate = b.publishedDate || b.published_date;
+    //  const aPublishedDate = a.publishedDate || a.published_date;
+    //  const bPublishedDate = b.publishedDate || b.published_date;
       const aCreatedAt = a.createdAt || a.created_at;
       const bCreatedAt = b.createdAt || b.created_at;
       
       // If both have published dates, sort by published date (descending)
-      if (aPublishedDate && bPublishedDate) {
+     /* if (aPublishedDate && bPublishedDate) {
         const aDate = parseDate(aPublishedDate);
         const bDate = parseDate(bPublishedDate);
         if (aDate && bDate) {
@@ -147,7 +149,7 @@ export default function NewspaperPublicationPage() {
       // If only b has published date, it comes first
       if (!aPublishedDate && bPublishedDate) {
         return 1;
-      }
+      }*/
       
       // If neither has published date, sort by created date (descending)
       if (aCreatedAt && bCreatedAt) {
@@ -218,6 +220,7 @@ export default function NewspaperPublicationPage() {
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: !!(data.showPublishDate || (data as any).show_publish_date),
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -239,6 +242,7 @@ export default function NewspaperPublicationPage() {
         hasYearFilter: true,
         filterItems: [],
         sections: [],
+        showPublishDate:false,
         isActive: true,
       });
     } finally {
@@ -251,7 +255,7 @@ export default function NewspaperPublicationPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -278,7 +282,7 @@ export default function NewspaperPublicationPage() {
       <Header />
       <HeroSection title={pageContent.title} />
       
-      <section className="py-16 bg-[#e7e7e7]">
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -313,7 +317,13 @@ export default function NewspaperPublicationPage() {
                         filteredDocs,
                       };
                     })
-                    .filter((section) => section.filteredDocs.length > 0);
+                    .filter((section) => section.filteredDocs.length > 0)
+                    .sort((a, b) =>
+                      a.title.localeCompare(b.title, undefined, {
+                        sensitivity: 'base', // case-insensitive
+                        numeric: true
+                      })
+                    );
 
                   if (sectionsWithDocuments.length === 0) {
                     return (
@@ -351,11 +361,11 @@ export default function NewspaperPublicationPage() {
                               >
                                 {doc.title}
                               </p>
-                              {doc.publishedDate && (
+                              {pageContent.showPublishDate && (doc.publishedDate || doc.published_date) && (
                                 <p 
                                   style={{ color: '#484848', fontSize: '16px' }}
                                 >
-                                  Published Date: <time>{doc.publishedDate}</time>
+                                  Published Date: <time>{doc.publishedDate || doc.published_date}</time>
                                 </p>
                               )}
                             </div>

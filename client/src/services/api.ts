@@ -11,7 +11,7 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = localStorage.getItem('auth_token');
-  
+
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
@@ -39,12 +39,12 @@ async function apiRequest<T>(
   } catch (error: any) {
     // If it's a network error (backend not available), re-throw it
     // so components can handle it with demo mode
-    if (error.name === 'TypeError' || 
-        error.message.includes('fetch') || 
-        error.message.includes('ERR_CONNECTION_REFUSED') ||
-        error.message.includes('Failed to fetch') ||
-        error.message.includes('NetworkError') ||
-        error.message.includes('network')) {
+    if (error.name === 'TypeError' ||
+      error.message.includes('fetch') ||
+      error.message.includes('ERR_CONNECTION_REFUSED') ||
+      error.message.includes('Failed to fetch') ||
+      error.message.includes('NetworkError') ||
+      error.message.includes('network')) {
       throw new Error('Backend server not available');
     }
     // If it's a JSON parse error, provide better error message
@@ -183,7 +183,7 @@ export const aboutCmsApi = {
     method: 'DELETE',
   }),
   // Board Members (using LeadershipMember with category="Board Member")
-  getBoardMembers: () => apiRequest<any[]>('/api/cms/about/leadership').then((data: any[]) => 
+  getBoardMembers: () => apiRequest<any[]>('/api/cms/about/leadership').then((data: any[]) =>
     (data || []).filter((item: any) => item.category === 'Board Member')
   ),
   createBoardMember: (member: any) => apiRequest('/api/cms/about/leadership', {
@@ -198,7 +198,7 @@ export const aboutCmsApi = {
     method: 'DELETE',
   }),
   // Leadership Team (using LeadershipMember with category="Leadership Team")
-  getLeadershipTeam: () => apiRequest<any[]>('/api/cms/about/leadership').then((data: any[]) => 
+  getLeadershipTeam: () => apiRequest<any[]>('/api/cms/about/leadership').then((data: any[]) =>
     (data || []).filter((item: any) => item.category === 'Leadership Team')
   ),
   createLeadershipMember: (member: any) => apiRequest('/api/cms/about/leadership', {
@@ -886,6 +886,10 @@ export const investorsCmsApi = {
   deletePageContent: (id: number) => apiRequest(`/api/cms/investors/page-content/${id}`, {
     method: 'DELETE',
   }),
+  downloadAndSavePdf: (url: string, pageType: string) => apiRequest('/api/cms/investors/download-pdf', {
+    method: 'POST',
+    body: JSON.stringify({ url, pageType }),
+  }),
 };
 
 // Contact CMS API
@@ -957,7 +961,7 @@ export const stockApi = {
     if (params.start_date) formData.append('start_date', params.start_date);
     if (params.end_date) formData.append('end_date', params.end_date);
     if (params.nonce) formData.append('nonce', params.nonce);
-    
+
     return apiRequest<any>('/api/stock/chart-data', {
       method: 'POST',
       headers: {

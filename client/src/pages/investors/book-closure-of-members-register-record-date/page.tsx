@@ -28,6 +28,8 @@ interface PageContent {
     documents: Document[];
   }>;
   isActive: boolean;
+  showPublishDate?: boolean;
+  show_publish_date?: boolean;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
@@ -133,13 +135,13 @@ const BookClosurePage = () => {
     const documentsWithIndex = filtered.map((doc, index) => ({ ...doc, _originalIndex: index }));
     
     return documentsWithIndex.sort((a, b) => {
-      const aPublishedDate = a.publishedDate || a.published_date || a.date;
-      const bPublishedDate = b.publishedDate || b.published_date || b.date;
+     // const aPublishedDate = a.publishedDate || a.published_date || a.date;
+     // const bPublishedDate = b.publishedDate || b.published_date || b.date;
       const aCreatedAt = a.createdAt || a.created_at;
       const bCreatedAt = b.createdAt || b.created_at;
       
       // If both have published dates, sort by published date (descending)
-      if (aPublishedDate && bPublishedDate) {
+    /*  if (aPublishedDate && bPublishedDate) {
         const aDate = parseDate(aPublishedDate);
         const bDate = parseDate(bPublishedDate);
         if (aDate && bDate) {
@@ -156,7 +158,7 @@ const BookClosurePage = () => {
       // If only b has published date, it comes first
       if (!aPublishedDate && bPublishedDate) {
         return 1;
-      }
+      }*/
       
       // If neither has published date, sort by created date (descending)
       if (aCreatedAt && bCreatedAt) {
@@ -194,6 +196,7 @@ const BookClosurePage = () => {
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: data.showPublishDate || (data as any).show_publish_date || false,
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -218,7 +221,7 @@ const BookClosurePage = () => {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -245,7 +248,7 @@ const BookClosurePage = () => {
       <Header />
       <HeroSection title={pageContent.title} />
       
-      <section className="py-16 bg-[#e7e7e7]">
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -305,11 +308,11 @@ const BookClosurePage = () => {
                                 >
                                   {doc.title}
                                 </p>
-                                {doc.publishedDate && (
+                                {pageContent.showPublishDate && (doc.publishedDate || doc.published_date) && (
                                   <p 
                                     style={{ color: '#484848', fontSize: '16px' }}
                                   >
-                                    Published Date: <time>{doc.publishedDate}</time>
+                                    Published Date: <time>{doc.publishedDate || doc.published_date}</time>
                                   </p>
                                 )}
                               </div>

@@ -1,17 +1,14 @@
 import { useState, useEffect } from 'react';
 import { investorsCmsApi } from '../../../../services/api';
 
-const API_BASE_URL = "";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 interface Document {
   title: string;
   year: string;
   pdfUrl: string;
-}
-
-interface Section {
-  title: string;
-  documents: Document[];
+  date?: string;
+  publishedDate?: string;
 }
 
 interface FinancialStatementOfSubsidiaryPageContent {
@@ -20,8 +17,10 @@ interface FinancialStatementOfSubsidiaryPageContent {
   title: string;
   hasYearFilter: boolean;
   filterItems?: string[];
-  sections: Section[];
+  sections: { title: string; documents: Document[] }[];
   isActive: boolean;
+  showPublishDate: boolean;
+  showCmsPublishDate: boolean;
 }
 
 export default function InvestorFinancialStatementOfSubsidiaryCMS() {
@@ -32,58 +31,53 @@ export default function InvestorFinancialStatementOfSubsidiaryCMS() {
     filterItems: [],
     sections: [],
     isActive: true,
+    showPublishDate: false,
+    showCmsPublishDate: false,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [editingSection, setEditingSection] = useState<{ section: Section | null; sectionIndex: number } | null>(null);
+  const [editingSection, setEditingSection] = useState<{ title: string; documents: Document[] } | null>(null);
+  const [editingSectionIndex, setEditingSectionIndex] = useState<number>(-1);
   const [showSectionForm, setShowSectionForm] = useState(false);
-  const [editingDocument, setEditingDocument] = useState<{ document: Document | null; sectionIndex: number; documentIndex: number } | null>(null);
+  const [editingDocument, setEditingDocument] = useState<{ sectionIndex: number; document: Document; documentIndex: number } | null>(null);
   const [showDocumentForm, setShowDocumentForm] = useState(false);
   const [newFilterItem, setNewFilterItem] = useState('');
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [pdfUrlInput, setPdfUrlInput] = useState('');
+  const [isManualPdfUrl, setIsManualPdfUrl] = useState(false);
 
-  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !editingDocument?.document) return;
-
-    if (file.type !== 'application/pdf') {
-      setError('Please select a PDF file');
-      return;
+  useEffect(() => {
+    if (editingDocument?.document?.pdfUrl) {
+      setPdfUrlInput(editingDocument.document.pdfUrl);
+      setIsManualPdfUrl(isExternalPdfUrl(editingDocument.document.pdfUrl));
+    } else {
+      setPdfUrlInput('');
+      setIsManualPdfUrl(false);
     }
+  }, [editingDocument]);
 
-    if (file.size > 50 * 1024 * 1024) {
-      setError('PDF size should be less than 50MB');
-      return;
-    }
+  const isExternalPdfUrl = (url: string) => {
+    return url.startsWith('http://') || url.startsWith('https://');
+  };
 
-    setUploadingPdf(true);
-    setError('');
+  const handlePdfUrlChange = async (url: string) => {
+    setPdfUrlInput(url);
+    if (editingDocument && editingDocument.document) {
+      const updatedDoc = { ...editingDocument.document, pdfUrl: url };
+      setEditingDocument({ ...editingDocument, document: updatedDoc });
 
-    try {
-      const formData = new FormData();
-      formData.append('pdf', file);
-
-      const response = await fetch(`${API_BASE_URL}/api/upload/pdf/financial-statement-subsidiary`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload PDF');
+      if (isExternalPdfUrl(url)) {
+        try {
+          setDownloadingPdf(true);
+          await investorsCmsApi.downloadAndSavePdf(url, 'financial-statement-of-subsidiary');
+        } catch (err) {
+          console.error('Failed to trigger background PDF download:', err);
+        } finally {
+          setDownloadingPdf(false);
+        }
       }
-
-      const data = await response.json();
-      setEditingDocument({
-        ...editingDocument,
-        document: { ...editingDocument.document, pdfUrl: data.pdfUrl }
-      });
-      setSuccess('PDF uploaded successfully');
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (err: any) {
-      setError(err.message || 'Failed to upload PDF');
-    } finally {
-      setUploadingPdf(false);
     }
   };
 
@@ -97,17 +91,20 @@ export default function InvestorFinancialStatementOfSubsidiaryCMS() {
       setError('');
       const data = await investorsCmsApi.getPageContentBySlug('financial-statement-of-subsidiary');
       if (data) {
+        const sections = data.sections || [];
         setPageContent({
           ...data,
-          sections: data.sections || [],
+          sections,
           filterItems: data.filterItems || [],
+          showPublishDate: data.showPublishDate || (data as any).show_publish_date || false,
+          showCmsPublishDate: data.showCmsPublishDate || (data as any).show_cms_publish_date || false,
+          isActive: data.isActive !== undefined ? data.isActive : (data as any).is_active !== undefined ? (data as any).is_active : true,
         });
       }
     } catch (err: any) {
       if (err.message && !err.message.includes('Backend server not available')) {
         setError(err.message || 'Failed to load Financial Statement of Subsidiary page');
       }
-      // Use default structure if not found
       setPageContent({
         slug: 'financial-statement-of-subsidiary',
         title: 'Financial Statement of Subsidiary',
@@ -115,6 +112,8 @@ export default function InvestorFinancialStatementOfSubsidiaryCMS() {
         filterItems: [],
         sections: [],
         isActive: true,
+        showPublishDate: false,
+        showCmsPublishDate: false,
       });
     } finally {
       setLoading(false);
@@ -125,28 +124,30 @@ export default function InvestorFinancialStatementOfSubsidiaryCMS() {
     try {
       setError('');
       setSuccess('');
+      setLoading(true);
       
-      // Check if page exists
-      let existingPage;
-      try {
-        existingPage = await investorsCmsApi.getPageContentBySlug('financial-statement-of-subsidiary');
-      } catch (e) {
-        // Page doesn't exist yet
-      }
+      const saveData = {
+        ...pageContent,
+        show_publish_date: pageContent.showPublishDate,
+        show_cms_publish_date: pageContent.showCmsPublishDate,
+        is_active: pageContent.isActive,
+        sections: pageContent.sections,
+      };
 
-      if (existingPage && existingPage.id) {
-        await investorsCmsApi.updatePageContent(existingPage.id, pageContent);
+      if (pageContent.id) {
+        await investorsCmsApi.updatePageContent(pageContent.id, saveData);
         setSuccess('Financial Statement of Subsidiary page updated successfully');
       } else {
-        await investorsCmsApi.createPageContent(pageContent);
+        await investorsCmsApi.createPageContent(saveData);
         setSuccess('Financial Statement of Subsidiary page created successfully');
       }
       
-      // Reload the data to ensure we have the latest from the server
       await loadPageContent();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
       setError(err.message || 'Failed to save Financial Statement of Subsidiary page');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -181,70 +182,59 @@ export default function InvestorFinancialStatementOfSubsidiaryCMS() {
   };
 
   const handleAddSection = () => {
-    setEditingSection({
-      section: {
-        title: '',
-        documents: [],
-      },
-      sectionIndex: -1,
-    });
+    setEditingSection({ title: '', documents: [] });
+    setEditingSectionIndex(-1);
     setShowSectionForm(true);
     setError('');
   };
 
-  const handleEditSection = (sectionIndex: number) => {
-    const section = pageContent.sections[sectionIndex];
-    setEditingSection({
-      section: { ...section },
-      sectionIndex,
-    });
+  const handleEditSection = (index: number) => {
+    setEditingSection({ ...pageContent.sections[index] });
+    setEditingSectionIndex(index);
     setShowSectionForm(true);
     setError('');
   };
 
-  const handleDeleteSection = (sectionIndex: number) => {
-    if (!confirm('Are you sure you want to delete this subsidiary? All documents in this subsidiary will be deleted.')) {
+  const handleDeleteSection = (index: number) => {
+    if (!window.confirm('Are you sure you want to delete this section? All documents in this section will also be deleted.')) {
       return;
     }
     const updatedSections = [...pageContent.sections];
-    updatedSections.splice(sectionIndex, 1);
+    updatedSections.splice(index, 1);
     setPageContent({ ...pageContent, sections: updatedSections });
   };
 
   const handleSaveSection = () => {
-    if (!editingSection || !editingSection.section) {
-      return;
-    }
+    if (!editingSection) return;
 
-    const section = editingSection.section;
-    if (!section.title.trim()) {
-      setError('Subsidiary name is required');
+    if (!editingSection.title.trim()) {
+      setError('Section title is required');
       return;
     }
 
     const updatedSections = [...pageContent.sections];
-    if (editingSection.sectionIndex >= 0) {
-      // Update existing section
-      updatedSections[editingSection.sectionIndex] = section;
+
+    if (editingSectionIndex >= 0) {
+      updatedSections[editingSectionIndex] = editingSection;
     } else {
-      // Add new section
-      updatedSections.push(section);
+      if (updatedSections.some(s => s.title === editingSection.title)) {
+        setError('A section with this title already exists');
+        return;
+      }
+      updatedSections.push(editingSection);
     }
 
     setPageContent({ ...pageContent, sections: updatedSections });
-    setShowSectionForm(false);
     setEditingSection(null);
+    setEditingSectionIndex(-1);
+    setShowSectionForm(false);
     setError('');
   };
 
   const handleAddDocument = (sectionIndex: number) => {
     setEditingDocument({
-      document: {
-        title: '',
-        year: '',
-        pdfUrl: '',
-      },
       sectionIndex,
+      document: { title: '', year: '', pdfUrl: '', date: '' },
       documentIndex: -1,
     });
     setShowDocumentForm(true);
@@ -254,29 +244,15 @@ export default function InvestorFinancialStatementOfSubsidiaryCMS() {
   const handleEditDocument = (sectionIndex: number, documentIndex: number) => {
     const document = pageContent.sections[sectionIndex].documents[documentIndex];
     setEditingDocument({
-      document: { ...document },
       sectionIndex,
+      document: { ...document },
       documentIndex,
     });
     setShowDocumentForm(true);
     setError('');
   };
 
-  const handleDeleteDocument = (sectionIndex: number, documentIndex: number) => {
-    if (!confirm('Are you sure you want to delete this document?')) {
-      return;
-    }
-    const updatedSections = [...pageContent.sections];
-    updatedSections[sectionIndex].documents.splice(documentIndex, 1);
-    setPageContent({ ...pageContent, sections: updatedSections });
-  };
-
-  const handleSaveDocument = () => {
-    if (!editingDocument || !editingDocument.document) {
-      return;
-    }
-
-    const doc = editingDocument.document;
+  const handleSaveDocument = (doc: Document, sectionIndex: number, documentIndex: number) => {
     if (!doc.title.trim()) {
       setError('Document title is required');
       return;
@@ -302,24 +278,215 @@ export default function InvestorFinancialStatementOfSubsidiaryCMS() {
     }
 
     const updatedSections = [...pageContent.sections];
-    if (editingDocument.documentIndex >= 0) {
-      // Update existing document
-      updatedSections[editingDocument.sectionIndex].documents[editingDocument.documentIndex] = doc;
+    if (documentIndex >= 0) {
+      updatedSections[sectionIndex].documents[documentIndex] = doc;
     } else {
-      // Add new document
-      updatedSections[editingDocument.sectionIndex].documents.push(doc);
+      updatedSections[sectionIndex].documents.push(doc);
     }
 
     setPageContent({ ...pageContent, sections: updatedSections });
-    setShowDocumentForm(false);
     setEditingDocument(null);
+    setShowDocumentForm(false);
     setError('');
   };
 
+  const handleDeleteDocument = (sectionIndex: number, documentIndex: number) => {
+    if (!window.confirm('Are you sure you want to delete this document?')) {
+      return;
+    }
+    const updatedSections = [...pageContent.sections];
+    updatedSections[sectionIndex].documents.splice(documentIndex, 1);
+    setPageContent({ ...pageContent, sections: updatedSections });
+  };
+
+  const handlePdfUpload = async (file: File) => {
+    if (!editingDocument || !editingDocument.document) return;
+    try {
+      setUploadingPdf(true);
+      const formData = new FormData();
+      formData.append('pdf', file);
+      const response = await fetch(`${API_BASE_URL}/api/upload/pdf/financial-statement-of-subsidiary`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) throw new Error('Upload failed');
+      const data = await response.json();
+      setEditingDocument({ ...editingDocument, document: { ...editingDocument.document, pdfUrl: data.pdfUrl } });
+      setSuccess('PDF uploaded successfully');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setError('Failed to upload PDF');
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
+  const renderDocumentFields = (doc: Document, sectionIndex: number, documentIndex: number) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 bg-white rounded-xl border border-gray-100 shadow-sm">
+      <div className="md:col-span-2">
+        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Document Title</label>
+        <div className="relative group">
+          <input
+            type="text"
+            value={doc.title}
+            onChange={(e) => {
+              const updatedDoc = { ...doc, title: e.target.value };
+              if (editingDocument) {
+                setEditingDocument({ ...editingDocument, document: updatedDoc });
+              }
+            }}
+            className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-xl focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-gray-700 font-medium placeholder:text-gray-300 shadow-inner group-hover:bg-gray-100/50"
+            placeholder="e.g. Financial Statement of Subsidiary 2024-2025"
+          />
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-500 transition-colors">
+            <i className="ri-text-spacing text-xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <div className="md:col-span-2">
+        <div className="flex items-center justify-between mb-2 ml-1">
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Document Source</label>
+          <button
+            onClick={() => setIsManualPdfUrl(!isManualPdfUrl)}
+            className="text-[10px] font-bold text-blue-600 uppercase tracking-tighter bg-blue-50 px-2 py-1 rounded hover:bg-blue-100 transition-colors"
+          >
+            Switch to {isManualPdfUrl ? 'File Upload' : 'Manual URL'}
+          </button>
+        </div>
+
+        {isManualPdfUrl ? (
+          <div className="relative group">
+            <input
+              type="text"
+              value={pdfUrlInput}
+              onChange={(e) => handlePdfUrlChange(e.target.value)}
+              className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-xl focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-gray-700 font-medium placeholder:text-gray-300 shadow-inner group-hover:bg-gray-100/50"
+              placeholder="https://example.com/document.pdf"
+            />
+            {downloadingPdf && (
+              <div className="absolute right-12 top-1/2 -translate-y-1/2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+              </div>
+            )}
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-500 transition-colors">
+              <i className="ri-links-line text-xl"></i>
+            </div>
+          </div>
+        ) : (
+          <div className="relative group">
+            <input
+              type="file"
+              onChange={(e) => e.target.files?.[0] && handlePdfUpload(e.target.files[0])}
+              className="hidden"
+              id={`financial-statement-of-subsidiary-pdf-upload-${sectionIndex}-${documentIndex}`}
+            />
+            <label
+              htmlFor={`financial-statement-of-subsidiary-pdf-upload-${sectionIndex}-${documentIndex}`}
+              className="flex items-center justify-between w-full px-5 py-4 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-100/50 hover:border-blue-500/30 transition-all cursor-pointer group"
+            >
+              <span className="text-gray-500 font-medium truncate pr-4">
+                {doc.pdfUrl ? doc.pdfUrl.split('/').pop() : 'Click to upload PDF...'}
+              </span>
+              <div className="flex items-center gap-2 text-blue-600">
+                {uploadingPdf ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current"></div>
+                ) : (
+                  <>
+                    <span className="text-xs font-bold uppercase tracking-widest bg-blue-50 px-3 py-1.5 rounded-lg group-hover:bg-blue-100">Browse</span>
+                    <i className="ri-upload-cloud-2-line text-xl"></i>
+                  </>
+                )}
+              </div>
+            </label>
+          </div>
+        )}
+      </div>
+
+      {pageContent.showCmsPublishDate && (
+        <div>
+          <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Published Date</label>
+          <div className="relative group">
+            <input
+              type="text"
+              value={doc.date || doc.publishedDate || ''}
+              onChange={(e) => {
+                const newValue = e.target.value;
+                const updatedDoc = { ...doc, date: newValue, publishedDate: newValue };
+                if (editingDocument) {
+                  setEditingDocument({ ...editingDocument, document: updatedDoc });
+                }
+              }}
+              className="w-full px-5 py-3 bg-gray-50 border-2 border-transparent rounded-xl focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-gray-700 font-medium placeholder:text-gray-300 group-hover:bg-gray-100/50"
+              placeholder="DD/MM/YYYY"
+            />
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300">
+              <i className="ri-calendar-event-line text-lg"></i>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Financial Year</label>
+        <div className="relative group">
+          {pageContent.filterItems && pageContent.filterItems.length > 0 ? (
+            <select
+              value={doc.year || ''}
+              onChange={(e) => {
+                const updatedDoc = { ...doc, year: e.target.value };
+                if (editingDocument) {
+                  setEditingDocument({ ...editingDocument, document: updatedDoc });
+                }
+              }}
+              className="w-full px-5 py-3 bg-gray-50 border-2 border-transparent rounded-xl focus:bg-white focus:border-blue-500/30 transition-all outline-none text-gray-700 font-medium group-hover:bg-gray-100/50"
+            >
+              <option value="">Select Year</option>
+              {pageContent.filterItems.map((year) => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={doc.year || ''}
+              onChange={(e) => {
+                const updatedDoc = { ...doc, year: e.target.value };
+                if (editingDocument) {
+                  setEditingDocument({ ...editingDocument, document: updatedDoc });
+                }
+              }}
+              className="w-full px-5 py-3 bg-gray-50 border-2 border-transparent rounded-xl focus:bg-white focus:border-blue-500/30 transition-all outline-none text-gray-700 font-medium placeholder:text-gray-300 group-hover:bg-gray-100/50"
+              placeholder="e.g. 2024-25"
+            />
+          )}
+        </div>
+      </div>
+
+      <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t border-gray-50 mt-2">
+        <button
+          onClick={() => {
+            setShowDocumentForm(false);
+            setEditingDocument(null);
+          }}
+          className="px-6 py-2.5 text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-gray-600 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => handleSaveDocument(doc, sectionIndex, documentIndex)}
+          className="px-8 py-2.5 bg-gray-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-gray-200"
+        >
+          {documentIndex >= 0 ? 'Update Item' : 'Add to List'}
+        </button>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="text-center py-12">
+      <div className="min-h-screen bg-[#F8FAFC] font-['Open_Sans'] flex items-center justify-center">
+        <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           <p className="mt-2 text-gray-600">Loading Financial Statement of Subsidiary page...</p>
         </div>
@@ -328,333 +495,325 @@ export default function InvestorFinancialStatementOfSubsidiaryCMS() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Financial Statement of Subsidiary Page CMS</h2>
-        <p className="text-sm text-gray-600 mt-1">Manage subsidiaries and their financial statements</p>
-      </div>
-
-      {/* Messages */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-          {error}
-        </div>
-      )}
-      {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-          {success}
-        </div>
-      )}
-
-      {/* General Settings */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Page Title *
-            </label>
-            <input
-              type="text"
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              value={pageContent.title}
-              onChange={(e) => setPageContent({ ...pageContent, title: e.target.value })}
-              placeholder="Financial Statement of Subsidiary"
-            />
-          </div>
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={pageContent.isActive}
-              onChange={(e) => setPageContent({ ...pageContent, isActive: e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-              Active
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* Year Filter Items */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Year Filter Items</h3>
-        <div className="mb-4 flex gap-2">
-          <input
-            type="text"
-            className="flex-1 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            value={newFilterItem}
-            onChange={(e) => setNewFilterItem(e.target.value)}
-            placeholder="e.g., 2024-25"
-            onKeyPress={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleAddFilterItem();
-              }
-            }}
-          />
-          <button
-            onClick={handleAddFilterItem}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Add Year
-          </button>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(pageContent.filterItems || []).map((item, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-800 rounded-lg text-sm"
-            >
-              {item}
-              <button
-                onClick={() => handleDeleteFilterItem(item)}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Subsidiaries (Sections) */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Subsidiaries ({pageContent.sections.length})</h3>
-          <button
-            onClick={handleAddSection}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <i className="ri-add-line mr-2"></i>
-            Add Subsidiary
-          </button>
-        </div>
-
-        {/* Sections List */}
-        {pageContent.sections.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No subsidiaries found. Click "Add Subsidiary" to create one.
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {pageContent.sections.map((section, sectionIndex) => (
-              <div key={sectionIndex} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-md font-semibold text-gray-900">{section.title}</h4>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditSection(sectionIndex)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit Subsidiary
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSection(sectionIndex)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete Subsidiary
-                    </button>
-                  </div>
-                </div>
-
-                {/* Documents in Section */}
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600">Documents ({section.documents.length})</span>
-                    <button
-                      onClick={() => handleAddDocument(sectionIndex)}
-                      className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors"
-                    >
-                      <i className="ri-add-line mr-1"></i>
-                      Add Document
-                    </button>
-                  </div>
-
-                  {section.documents.length === 0 ? (
-                    <div className="text-sm text-gray-500 py-2">No documents in this subsidiary.</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {section.documents.map((doc, docIndex) => (
-                        <div key={docIndex} className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{doc.title}</p>
-                            <p className="text-xs text-gray-500">Year: {doc.year}</p>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEditDocument(sectionIndex, docIndex)}
-                              className="text-blue-600 hover:text-blue-800 text-sm"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDocument(sectionIndex, docIndex)}
-                              className="text-red-600 hover:text-red-800 text-sm"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+    <div className="min-h-screen bg-[#F8FAFC] font-['Open_Sans']">
+      <div className="max-w-6xl mx-auto px-4 py-12">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 mb-12">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-200">
+                <i className="ri-folder-info-line text-white text-xl"></i>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Section Form */}
-      {showSectionForm && editingSection && editingSection.section && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-md font-semibold text-gray-900 mb-4">
-            {editingSection.sectionIndex >= 0 ? 'Edit Subsidiary' : 'Add New Subsidiary'}
-          </h4>
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Subsidiary Name *
-              </label>
-              <input
-                type="text"
-                className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={editingSection.section.title}
-                onChange={(e) => setEditingSection({
-                  ...editingSection,
-                  section: { ...editingSection.section, title: e.target.value }
-                })}
-                placeholder="e.g., Refex EV Fleet Services Private Limited"
-              />
+              <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Financial Statement of Subsidiary Page CMS</h2>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={handleSaveSection}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Save Subsidiary
-              </button>
-              <button
-                onClick={() => {
-                  setShowSectionForm(false);
-                  setEditingSection(null);
-                  setError('');
-                }}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
+            <p className="text-sm text-gray-400 flex items-center gap-2 ml-1">
+              <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)] animate-pulse"></span>
+              Manage documents for the Financial Statement of Subsidiary section
+            </p>
           </div>
-        </div>
-      )}
 
-      {/* Document Form */}
-      {showDocumentForm && editingDocument && editingDocument.document && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-md font-semibold text-gray-900 mb-4">
-            {editingDocument.documentIndex >= 0 ? 'Edit Document' : 'Add New Document'}
-            {editingDocument.sectionIndex >= 0 && (
-              <span className="text-sm text-gray-600 font-normal ml-2">
-                (in {pageContent.sections[editingDocument.sectionIndex]?.title})
-              </span>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="group relative px-8 py-4 bg-[#2563EB] text-white rounded-2xl hover:bg-blue-700 transition-all shadow-[0_10px_20px_-5px_rgba(37,99,235,0.3)] hover:shadow-[0_15px_30px_-5px_rgba(37,99,235,0.4)] flex items-center gap-3 active:scale-95 disabled:opacity-70"
+          >
+            {loading ? (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            ) : (
+              <>
+                <i className="ri-check-line text-xl group-hover:scale-110 transition-transform"></i>
+                <span className="font-bold tracking-wider text-sm">SAVE ALL CHANGES</span>
+              </>
             )}
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Document Title *
-              </label>
-              <input
-                type="text"
-                className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={editingDocument.document.title}
-                onChange={(e) => setEditingDocument({
-                  ...editingDocument,
-                  document: { ...editingDocument.document, title: e.target.value }
-                })}
-                placeholder="e.g., Financials of Refex EV Fleet – 2024-25"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Year * (e.g., 2024-25)
-              </label>
-              <input
-                type="text"
-                className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={editingDocument.document.year}
-                onChange={(e) => setEditingDocument({
-                  ...editingDocument,
-                  document: { ...editingDocument.document, year: e.target.value }
-                })}
-                placeholder="2024-25"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                PDF Document *
-              </label>
-              <div className="flex items-center gap-4 mb-2">
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handlePdfUpload}
-                  className="hidden"
-                  id="financialSubPdfUpload"
-                  disabled={uploadingPdf}
-                />
-                <label
-                  htmlFor="financialSubPdfUpload"
-                  className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${
-                    uploadingPdf
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
-                >
-                  {uploadingPdf ? 'Uploading...' : 'Upload PDF'}
-                </label>
-                {editingDocument.document.pdfUrl && (
-                  <span className="text-sm text-gray-600 truncate max-w-md">
-                    {editingDocument.document.pdfUrl}
-                  </span>
-                )}
+          </button>
+        </div>
+
+        {/* Status Messages */}
+        <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
+          {error && (
+            <div className="animate-slide-in p-4 bg-white border-l-4 border-red-500 shadow-2xl rounded-xl flex items-center gap-4 min-w-[320px]">
+              <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center text-red-500">
+                <i className="ri-error-warning-line text-xl"></i>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-red-500 uppercase tracking-widest">Error Occurred</p>
+                <p className="text-sm text-gray-600 font-medium">{error}</p>
               </div>
             </div>
-            <div className="md:col-span-2 flex gap-3">
-              <button
-                onClick={handleSaveDocument}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Save Document
-              </button>
-              <button
-                onClick={() => {
-                  setShowDocumentForm(false);
-                  setEditingDocument(null);
-                  setError('');
-                }}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-              >
-                Cancel
-              </button>
+          )}
+          {success && (
+            <div className="animate-slide-in p-4 bg-white border-l-4 border-green-500 shadow-2xl rounded-xl flex items-center gap-4 min-w-[320px]">
+              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-500">
+                <i className="ri-checkbox-circle-line text-xl"></i>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-green-500 uppercase tracking-widest">Success</p>
+                <p className="text-sm text-gray-600 font-medium">{success}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Settings Sidebar */}
+          <div className="lg:col-span-1 space-y-8">
+            <div className="bg-white rounded-[2rem] p-8 shadow-xl shadow-blue-900/5 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-700"></div>
+
+              <h3 className="text-lg font-bold text-gray-900 mb-8 relative flex items-center gap-2">
+                <span className="w-2 h-8 bg-blue-600 rounded-full"></span>
+                General Settings
+              </h3>
+
+              <div className="space-y-8 relative">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Page Title</label>
+                  <input
+                    type="text"
+                    value={pageContent.title}
+                    onChange={(e) => setPageContent({ ...pageContent, title: e.target.value })}
+                    className="w-full px-5 py-4 bg-gray-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-gray-700 font-semibold shadow-inner"
+                  />
+                </div>
+
+                <div className="space-y-4 pt-4">
+                  <div className="group/item flex items-center justify-between p-4 bg-gray-50 rounded-2xl border-2 border-transparent hover:border-blue-500/10 hover:bg-white hover:shadow-lg transition-all cursor-pointer" onClick={() => setPageContent({ ...pageContent, isActive: !pageContent.isActive })}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${pageContent.isActive ? 'bg-green-100 text-green-600' : 'bg-gray-200 text-gray-500'}`}>
+                        <i className={`ri-power-flash-line text-xl ${pageContent.isActive ? 'animate-pulse' : ''}`}></i>
+                      </div>
+                      <span className="font-bold text-gray-700 text-sm tracking-tight">Status Active</span>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${pageContent.isActive ? 'bg-green-500' : 'bg-gray-300'}`}>
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${pageContent.isActive ? 'left-7' : 'left-1'}`}></div>
+                    </div>
+                  </div>
+
+                  <div className="group/item flex items-center justify-between p-4 bg-gray-50 rounded-2xl border-2 border-transparent hover:border-blue-500/10 hover:bg-white hover:shadow-lg transition-all cursor-pointer" onClick={() => setPageContent({ ...pageContent, showCmsPublishDate: !pageContent.showCmsPublishDate })}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${pageContent.showCmsPublishDate ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-500'}`}>
+                        <i className="ri-calendar-todo-line text-xl"></i>
+                      </div>
+                      <span className="font-bold text-gray-700 text-sm tracking-tight">CMS Published Date</span>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${pageContent.showCmsPublishDate ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${pageContent.showCmsPublishDate ? 'left-7' : 'left-1'}`}></div>
+                    </div>
+                  </div>
+
+                  <div className="group/item flex items-center justify-between p-4 bg-gray-50 rounded-2xl border-2 border-transparent hover:border-blue-500/10 hover:bg-white hover:shadow-lg transition-all cursor-pointer" onClick={() => setPageContent({ ...pageContent, showPublishDate: !pageContent.showPublishDate })}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${pageContent.showPublishDate ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-500'}`}>
+                        <i className="ri-global-line text-xl"></i>
+                      </div>
+                      <span className="font-bold text-gray-700 text-sm tracking-tight">Public Website Dates</span>
+                    </div>
+                    <div className={`w-12 h-6 rounded-full relative transition-colors duration-300 ${pageContent.showPublishDate ? 'bg-blue-600' : 'bg-gray-300'}`}>
+                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${pageContent.showPublishDate ? 'left-7' : 'left-1'}`}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Year Filter Items */}
+            <div className="bg-white rounded-[2rem] p-8 shadow-xl shadow-blue-900/5">
+              <h3 className="text-lg font-bold text-gray-900 mb-6 relative flex items-center gap-2">
+                <span className="w-2 h-8 bg-blue-600 rounded-full"></span>
+                Year Filter Items
+              </h3>
+              <div className="mb-4 flex gap-2">
+                <input
+                  type="text"
+                  className="flex-1 px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-gray-700 font-medium placeholder:text-gray-300"
+                  value={newFilterItem}
+                  onChange={(e) => setNewFilterItem(e.target.value)}
+                  placeholder="e.g., 2024-25"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddFilterItem();
+                    }
+                  }}
+                />
+                <button
+                  onClick={handleAddFilterItem}
+                  className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-bold text-sm"
+                >
+                  Add
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-gray-100">
+                {(pageContent.filterItems || []).map((item, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-800 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors"
+                  >
+                    {item}
+                    <button
+                      onClick={() => handleDeleteFilterItem(item)}
+                      className="text-blue-600 hover:text-blue-800 text-lg leading-none"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content Areas */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Sections List */}
+            <div className="bg-white rounded-[2rem] p-8 shadow-xl shadow-blue-900/5">
+              <div className="flex justify-between items-center mb-10">
+                <h3 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                  <div className="w-2 h-10 bg-blue-600 rounded-full"></div>
+                  Subsidiaries
+                  <span className="bg-blue-50 text-blue-600 text-xs px-3 py-1.5 rounded-full font-extrabold">{pageContent.sections.length} Sections</span>
+                </h3>
+                <button
+                  onClick={handleAddSection}
+                  className="px-6 py-3 bg-gray-900 text-white rounded-xl hover:bg-black transition-all shadow-lg hover:shadow-gray-200 flex items-center gap-2 group"
+                >
+                  <i className="ri-add-fill text-lg group-hover:rotate-90 transition-transform"></i>
+                  <span className="font-bold text-sm">Add Section</span>
+                </button>
+              </div>
+
+              {/* Section Form */}
+              {showSectionForm && editingSection && (
+                <div className="mb-8 p-6 bg-gray-50 rounded-2xl border-2 border-blue-100">
+                  <h4 className="text-sm font-extrabold text-blue-600 uppercase tracking-widest mb-4">
+                    {editingSectionIndex >= 0 ? 'Edit Section' : 'New Section'}
+                  </h4>
+                  <div className="mb-4">
+                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Section Title</label>
+                    <input
+                      type="text"
+                      value={editingSection.title}
+                      onChange={(e) => setEditingSection({ ...editingSection, title: e.target.value })}
+                      className="w-full px-5 py-4 bg-white border-2 border-transparent rounded-xl focus:bg-white focus:border-blue-500/30 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none text-gray-700 font-medium"
+                      placeholder="e.g. Refex EV Fleet Services Private Limited"
+                    />
+                  </div>
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => {
+                        setShowSectionForm(false);
+                        setEditingSection(null);
+                        setEditingSectionIndex(-1);
+                      }}
+                      className="px-6 py-2.5 text-gray-400 font-bold text-xs uppercase tracking-widest hover:text-gray-600 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveSection}
+                      className="px-8 py-2.5 bg-gray-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-gray-200"
+                    >
+                      {editingSectionIndex >= 0 ? 'Update Section' : 'Add Section'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {pageContent.sections.length === 0 && !showSectionForm ? (
+                <div className="flex flex-col items-center justify-center py-20 grayscale opacity-40">
+                  <img src="https://refex.co.in/wp-content/uploads/2024/12/no-data.svg" className="w-32 mb-4" />
+                  <p className="font-bold text-gray-400 italic">No sections currently created</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {pageContent.sections.map((section, sectionIndex) => (
+                    <div key={sectionIndex} className="border border-gray-200 rounded-2xl p-6 bg-gray-50/50">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-lg font-bold text-gray-900">{section.title}</h4>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEditSection(sectionIndex)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-bold"
+                          >
+                            Edit Section
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSection(sectionIndex)}
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-bold"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Documents in Section */}
+                      <div className="mb-4">
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-sm font-bold text-gray-600">Documents ({section.documents.length})</span>
+                          <button
+                            onClick={() => handleAddDocument(sectionIndex)}
+                            className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-black transition-colors text-sm font-bold flex items-center gap-2"
+                          >
+                            <i className="ri-add-line"></i>
+                            Add Document
+                          </button>
+                        </div>
+
+                        {/* Document Form */}
+                        {showDocumentForm && editingDocument && editingDocument.sectionIndex === sectionIndex && editingDocument.document && (
+                          <div className="mb-6 p-4 bg-white rounded-xl border-2 border-blue-100">
+                            <h5 className="text-sm font-extrabold text-blue-600 uppercase tracking-widest mb-4">
+                              {editingDocument.documentIndex >= 0 ? 'Edit Document' : 'New Document'}
+                            </h5>
+                            {renderDocumentFields(editingDocument.document, sectionIndex, editingDocument.documentIndex)}
+                          </div>
+                        )}
+
+                        {/* Documents List */}
+                        {section.documents.length === 0 ? (
+                          <div className="text-center py-4 text-gray-400 text-sm">No documents in this section</div>
+                        ) : (
+                          <div className="space-y-3">
+                            {section.documents.map((doc, docIndex) => (
+                              <div key={docIndex} className="bg-white rounded-xl p-4 border border-gray-200 hover:shadow-lg transition-all flex items-center gap-4">
+                                <div className="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                                  <i className="ri-file-pdf-2-line text-2xl text-red-500"></i>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-bold text-gray-800 truncate">{doc.title}</h5>
+                                  <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+                                    {pageContent.showPublishDate && (doc.date || doc.publishedDate) && (
+                                      <span>Date: {doc.date || doc.publishedDate}</span>
+                                    )}
+                                    {doc.year && <span>Year: {doc.year}</span>}
+                                  </div>
+                                </div>
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleEditDocument(sectionIndex, docIndex)}
+                                    className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all flex items-center justify-center"
+                                  >
+                                    <i className="ri-edit-2-fill"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteDocument(sectionIndex, docIndex)}
+                                    className="w-10 h-10 bg-red-50 text-red-600 rounded-lg hover:bg-red-600 hover:text-white transition-all flex items-center justify-center"
+                                  >
+                                    <i className="ri-delete-bin-5-fill"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
-
-      {/* Save Button */}
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={handleSave}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Save All Changes
-        </button>
       </div>
     </div>
   );
 }
-

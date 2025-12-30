@@ -166,8 +166,8 @@ module.exports = {
     }),
     // Get all links
     getAllLinks: asyncHandler(async (req, res) => {
-      const links = await InvestorsRelatedLink.findAll({ 
-        order: [["display_order", "ASC"], ["id", "ASC"]] 
+      const links = await InvestorsRelatedLink.findAll({
+        order: [["display_order", "ASC"], ["id", "ASC"]]
       });
       return status.responseStatus(res, 200, "OK", links);
     }),
@@ -210,8 +210,8 @@ module.exports = {
     }),
     // Get all key personnel
     getAllPersonnel: asyncHandler(async (req, res) => {
-      const personnel = await InvestorsKeyPersonnel.findAll({ 
-        order: [["display_order", "ASC"], ["id", "ASC"]] 
+      const personnel = await InvestorsKeyPersonnel.findAll({
+        order: [["display_order", "ASC"], ["id", "ASC"]]
       });
       return status.responseStatus(res, 200, "OK", personnel);
     }),
@@ -282,16 +282,25 @@ module.exports = {
       if (!page) {
         return status.responseStatus(res, 404, "Not Found", { error: "Page not found" });
       }
-      // Ensure filterItems is in camelCase format (handle both snake_case and camelCase)
+      // Ensure filterItems and toggles are in camelCase format (handle both snake_case and camelCase)
       const pageData = page.toJSON ? page.toJSON() : page;
       if (pageData.filter_items && !pageData.filterItems) {
         pageData.filterItems = pageData.filter_items;
+      }
+      if (pageData.show_publish_date !== undefined && pageData.showPublishDate === undefined) {
+        pageData.showPublishDate = pageData.show_publish_date;
+      }
+      if (pageData.show_cms_publish_date !== undefined && pageData.showCmsPublishDate === undefined) {
+        pageData.showCmsPublishDate = pageData.show_cms_publish_date;
+      }
+      if (pageData.is_active !== undefined && pageData.isActive === undefined) {
+        pageData.isActive = pageData.is_active;
       }
       return status.responseStatus(res, 200, "OK", pageData);
     }),
     // Create page
     create: asyncHandler(async (req, res) => {
-      const { slug, title, hasYearFilter, filterItems, sections } = req.body;
+      const { slug, title, hasYearFilter, filterItems, sections, showPublishDate, showCmsPublishDate } = req.body;
       if (!slug || !title) {
         return status.responseStatus(res, 400, "Bad Request", { error: "slug and title are required" });
       }
@@ -302,10 +311,12 @@ module.exports = {
       const payload = {
         slug,
         title,
-        hasYearFilter: hasYearFilter !== undefined ? !!hasYearFilter : false,
-        filterItems: filterItems !== undefined ? filterItems : [],
+        hasYearFilter: req.body.has_year_filter !== undefined ? !!req.body.has_year_filter : (hasYearFilter !== undefined ? !!hasYearFilter : false),
+        filterItems: req.body.filter_items !== undefined ? req.body.filter_items : (filterItems !== undefined ? filterItems : []),
         sections: sections || [],
-        isActive: req.body.isActive !== undefined ? !!req.body.isActive : true,
+        showPublishDate: req.body.show_publish_date !== undefined ? !!req.body.show_publish_date : (showPublishDate !== undefined ? !!showPublishDate : false),
+        showCmsPublishDate: req.body.show_cms_publish_date !== undefined ? !!req.body.show_cms_publish_date : (showCmsPublishDate !== undefined ? !!showCmsPublishDate : false),
+        isActive: req.body.is_active !== undefined ? !!req.body.is_active : (req.body.isActive !== undefined ? !!req.body.isActive : true),
       };
       const page = await InvestorsPageContent.create(payload);
       return status.responseStatus(res, 201, "Created", page);
@@ -313,6 +324,7 @@ module.exports = {
     // Update page
     update: asyncHandler(async (req, res) => {
       const { id } = req.params;
+      console.log('UPDATING PAGE CONTENT:', id, 'BODY:', JSON.stringify(req.body).substring(0, 500));
       const page = await InvestorsPageContent.findByPk(id);
       if (!page) {
         return status.responseStatus(res, 404, "Not Found", { error: "Page not found" });
@@ -320,10 +332,12 @@ module.exports = {
       const payload = {
         slug: req.body.slug !== undefined ? req.body.slug : page.slug,
         title: req.body.title !== undefined ? req.body.title : page.title,
-        hasYearFilter: req.body.hasYearFilter !== undefined ? !!req.body.hasYearFilter : page.hasYearFilter,
-        filterItems: req.body.filterItems !== undefined ? req.body.filterItems : page.filterItems,
+        hasYearFilter: req.body.has_year_filter !== undefined ? !!req.body.has_year_filter : (req.body.hasYearFilter !== undefined ? !!req.body.hasYearFilter : page.hasYearFilter),
+        filterItems: req.body.filter_items !== undefined ? req.body.filter_items : (req.body.filterItems !== undefined ? req.body.filterItems : page.filterItems),
         sections: req.body.sections !== undefined ? req.body.sections : page.sections,
-        isActive: req.body.isActive !== undefined ? !!req.body.isActive : page.isActive,
+        showPublishDate: req.body.show_publish_date !== undefined ? !!req.body.show_publish_date : (req.body.showPublishDate !== undefined ? !!req.body.showPublishDate : page.showPublishDate),
+        showCmsPublishDate: req.body.show_cms_publish_date !== undefined ? !!req.body.show_cms_publish_date : (req.body.showCmsPublishDate !== undefined ? !!req.body.showCmsPublishDate : page.showCmsPublishDate),
+        isActive: req.body.is_active !== undefined ? !!req.body.is_active : (req.body.isActive !== undefined ? !!req.body.isActive : page.isActive),
       };
       await page.update(payload);
       return status.responseStatus(res, 200, "Updated", page);

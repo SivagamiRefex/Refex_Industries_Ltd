@@ -3,6 +3,8 @@
   "title": "IPO",
   "hasYearFilter": false,
   "filterItems": [],
+  "showPublishDate": false,
+  "showCmsPublishDate": false,
   "isActive": true,
   "sections": [
     {

@@ -178,7 +178,7 @@ export default function RelatedLinks() {
   };
   if (loading) {
     return (
-      <section className="py-16 bg-[#e7e7e7]" id="investor-compliance">
+      <section className="py-16 bg-[#f1f1f1]" id="investor-compliance">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
@@ -196,7 +196,7 @@ export default function RelatedLinks() {
   const sortedPersonnel = [...keyPersonnel].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
   return (
-    <section className="py-16 bg-[#e7e7e7]" id="investor-compliance">
+    <section className="py-16 bg-[#f1f1f1]" id="investor-compliance">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold text-black">
@@ -218,7 +218,7 @@ export default function RelatedLinks() {
                     <Link
                       key={link.id || index}
                       to={linkPath}
-                      className="block px-4 py-3 text-gray-700 hover:bg-gray-50 hover:text-[#7cd244] transition-colors cursor-pointer text-sm border-b-2 border-transparent hover:border-[#7cd244]"
+                      className="block px-4 py-3 text -[#1f1f1f] hover:text-[#61CE70] transition-colors cursor-pointer text-base border-b-2 border-transparent hover:border-[#61CE70]"
                     >
                       {link.name}
                     </Link>

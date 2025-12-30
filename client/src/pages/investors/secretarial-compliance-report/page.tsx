@@ -27,6 +27,7 @@ interface PageContent {
     title: string;
     documents: Document[];
   }>;
+  showPublishDate: boolean;
   isActive: boolean;
 }
 
@@ -57,6 +58,7 @@ const SecretarialComplianceReportPage = () => {
     hasYearFilter: true,
     filterItems: [],
     sections: [],
+    showPublishDate: false,
     isActive: true,
   });
   const [loading, setLoading] = useState(true);
@@ -187,6 +189,7 @@ const SecretarialComplianceReportPage = () => {
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: !!(data.showPublishDate || (data as any).show_publish_date),
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -220,7 +223,7 @@ const SecretarialComplianceReportPage = () => {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -247,7 +250,7 @@ const SecretarialComplianceReportPage = () => {
       <Header />
       <HeroSection title={pageContent.title} />
       
-      <section className="py-16 bg-[#e7e7e7]">
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -307,11 +310,11 @@ const SecretarialComplianceReportPage = () => {
                                 >
                                   {doc.title}
                                 </p>
-                                {doc.publishedDate && (
+                                {pageContent.showPublishDate && (doc.publishedDate || doc.published_date) && (
                                   <p 
                                     style={{ color: '#484848', fontSize: '16px' }}
                                   >
-                                    Published Date: <time>{doc.publishedDate}</time>
+                                    Published Date: <time>{doc.publishedDate || doc.published_date}</time>
                                   </p>
                                 )}
                               </div>

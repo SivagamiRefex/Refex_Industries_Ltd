@@ -9,18 +9,11 @@ import { investorsCmsApi } from '../../../services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
-// Helper function to get the correct PDF URL
 const getPdfUrl = (url: string): string => {
   if (!url) return '';
-  // If it's already a full URL (http/https), return as is
-  if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
-  }
-  // If it's a relative path (starts with /), prepend the API base URL
-  if (url.startsWith('/')) {
-    return `${API_BASE_URL}${url}`;
-  }
-  return url;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return `${API_BASE_URL}${url}`;
+  return `${API_BASE_URL}/${url}`;
 };
 
 interface Document {
@@ -44,6 +37,7 @@ interface PageContent {
     title: string;
     documents: Document[];
   }>;
+  showPublishDate: boolean;
   isActive: boolean;
 }
 
@@ -55,6 +49,7 @@ const FinancialStatementOfSubsidiaryPage = () => {
     hasYearFilter: true,
     filterItems: [],
     sections: [],
+    showPublishDate: false,
     isActive: true,
   });
   const [loading, setLoading] = useState(true);
@@ -62,150 +57,61 @@ const FinancialStatementOfSubsidiaryPage = () => {
 
   useEffect(() => {
     document.title = 'Financial Statement of Subsidiary - Refex Industries';
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute('content', 'Financial statements of Refex Industries subsidiary companies');
-    } else {
-      const meta = document.createElement('meta');
-      meta.setAttribute('name', 'description');
-      meta.setAttribute('content', 'Financial statements of Refex Industries subsidiary companies');
-      document.head.appendChild(meta);
-    }
-
     loadPageContent();
   }, []);
 
-  // Get all available years from CMS filter items or extract from documents
   const getAllYears = (): string[] => {
     const filterItems = pageContent.filterItems || (pageContent as any).filter_items || [];
     if (filterItems && filterItems.length > 0) {
       return [...filterItems].sort().reverse();
     }
-    if (!pageContent.sections || pageContent.sections.length === 0) return [];
-    const years = pageContent.sections
-      .flatMap((s) => s.documents.map((d) => d.year))
-      .filter((year: string, index: number, self: string[]) => year && self.indexOf(year) === index)
-      .sort()
-      .reverse();
-    return years;
+    return [];
   };
 
-  // Helper function to parse DD/MM/YYYY date format
   const parseDate = (dateString: string): Date | null => {
     if (!dateString) return null;
-    
-    // Try DD/MM/YYYY format first
     const ddmmyyyyMatch = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (ddmmyyyyMatch) {
       const [, day, month, year] = ddmmyyyyMatch;
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
-    
-    // Try other common formats
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? null : date;
   };
 
-  // Filter documents by year and sort by published date or created date
   const getFilteredDocuments = (documents: Document[]): Document[] => {
     let filtered = documents;
-    
-    // Filter by year if year filter is enabled
-    if (pageContent.hasYearFilter) {
+    if (pageContent.hasYearFilter && selectedYear) {
       filtered = documents.filter(doc => doc.year === selectedYear);
     }
-    
-    // Add original index to each document for tracking (newer documents have higher indices)
-    const documentsWithIndex = filtered.map((doc, index) => ({ ...doc, _originalIndex: index }));
-    
-    // Sort documents:
-    // 1. Documents with publishedDate/date: sort by date descending (recent to old)
-    // 2. Documents without publishedDate: sort by createdAt/created_at descending (recent to old)
-    // 3. Documents without both dates: use original index (higher = newer = appears first)
-    return documentsWithIndex.sort((a, b) => {
-      const aPublishedDate = a.publishedDate || a.published_date || a.date;
-      const bPublishedDate = b.publishedDate || b.published_date || b.date;
-      const aCreatedAt = a.createdAt || a.created_at;
-      const bCreatedAt = b.createdAt || b.created_at;
-      
-      // If both have published dates, sort by published date (descending)
-      if (aPublishedDate && bPublishedDate) {
-        const aDate = parseDate(aPublishedDate);
-        const bDate = parseDate(bPublishedDate);
-        if (aDate && bDate) {
-          return bDate.getTime() - aDate.getTime();
-        }
-        // If parsing fails, fall through to next comparison
-      }
-      
-      // If only a has published date, it comes first
-      if (aPublishedDate && !bPublishedDate) {
-        return -1;
-      }
-      
-      // If only b has published date, it comes first
-      if (!aPublishedDate && bPublishedDate) {
-        return 1;
-      }
-      
-      // If neither has published date, sort by created date (descending)
-      if (aCreatedAt && bCreatedAt) {
-        const aDate = parseDate(aCreatedAt);
-        const bDate = parseDate(bCreatedAt);
-        if (aDate && bDate) {
-          return bDate.getTime() - aDate.getTime();
-        }
-        // If parsing fails, try standard Date parsing
-        return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime();
-      }
-      
-      // If only a has created date, it comes first
-      if (aCreatedAt && !bCreatedAt) {
-        return -1;
-      }
-      
-      // If only b has created date, it comes first
-      if (!aCreatedAt && bCreatedAt) {
-        return 1;
-      }
-      
-      // If neither has dates, use original array index (higher index = newer = appears first)
-      return (b._originalIndex || 0) - (a._originalIndex || 0);
-    }).map(({ _originalIndex, ...doc }) => doc); // Remove the temporary index field
+
+    return [...filtered].sort((a, b) => {
+      const aDate = parseDate(a.publishedDate || a.published_date || a.date || a.createdAt || a.created_at || '');
+      const bDate = parseDate(b.publishedDate || b.published_date || b.date || b.createdAt || b.created_at || '');
+      if (aDate && bDate) return bDate.getTime() - aDate.getTime();
+      return 0;
+    });
   };
 
   const loadPageContent = async () => {
     try {
       setLoading(true);
       const data = await investorsCmsApi.getPageContentBySlug('financial-statement-of-subsidiary');
-      if (data && data.isActive) {
-        const filterItems = (data.filterItems || (data as any).filter_items || []);
-        const pageData = {
+      if (data) {
+        const filterItems = data.filterItems || data.filter_items || [];
+        setPageContent({
           ...data,
-          filterItems: filterItems,
-        };
-        setPageContent(pageData);
-        // Set default year to the most recent year if available
-        if (data.hasYearFilter) {
-          const availableYears = filterItems && filterItems.length > 0
-            ? [...filterItems].sort().reverse()
-            : [];
-          if (availableYears.length > 0) {
-            setSelectedYear(availableYears[0]);
-          }
+          filterItems,
+          showPublishDate: !!(data.showPublishDate || data.show_publish_date),
+          isActive: data.isActive !== undefined ? !!data.isActive : (data.is_active !== undefined ? !!data.is_active : true),
+        });
+        if (data.hasYearFilter && filterItems.length > 0) {
+          const sorted = [...filterItems].sort().reverse();
+          setSelectedYear(sorted[0]);
         }
       }
     } catch (err) {
       console.error('Failed to load Financial Statement of Subsidiary page:', err);
-      // Use empty data on error
-      setPageContent({
-        slug: 'financial-statement-of-subsidiary',
-        title: 'Financial Statement of Subsidiary',
-        hasYearFilter: true,
-        filterItems: [],
-        sections: [],
-        isActive: true,
-      });
     } finally {
       setLoading(false);
     }
@@ -216,14 +122,9 @@ const FinancialStatementOfSubsidiaryPage = () => {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <section className="py-16 bg-[#e7e7e7]">
-          <div className="max-w-7xl mx-auto px-6">
-            <div className="flex items-center justify-center py-12">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#7cd244]"></div>
-                <p className="mt-4 text-gray-600">Loading Financial Statement of Subsidiary information...</p>
-              </div>
-            </div>
+        <section className="py-16 bg-[#f1f1f1]">
+          <div className="max-w-7xl mx-auto px-6 flex justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#7cd244]"></div>
           </div>
         </section>
         <Footer />
@@ -232,9 +133,7 @@ const FinancialStatementOfSubsidiaryPage = () => {
     );
   }
 
-  if (!pageContent.isActive) {
-    return null;
-  }
+  if (!pageContent.isActive) return null;
 
   const availableYears = getAllYears();
 
@@ -242,19 +141,17 @@ const FinancialStatementOfSubsidiaryPage = () => {
     <div className="min-h-screen bg-white">
       <Header />
       <HeroSection title={pageContent.title} />
-      
-      <section className="py-16 bg-[#e7e7e7]">
+
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            {/* Left Sidebar - Links */}
             <InvestorSidebar currentPath={location.pathname} />
 
-            {/* Right Content */}
             <div className="lg:col-span-9">
               {/* Year Filter */}
               {pageContent.hasYearFilter && availableYears.length > 0 && (
                 <div className="mb-6 flex justify-end">
-                  <select 
+                  <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(e.target.value)}
                     className="px-4 py-2 border border-gray-300 bg-white text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#7cd244]"
@@ -266,94 +163,76 @@ const FinancialStatementOfSubsidiaryPage = () => {
                 </div>
               )}
 
-              {/* Sections */}
-              {pageContent.sections && pageContent.sections.length > 0 ? (
-                pageContent.sections.map((section, sectionIndex) => {
-                  const filteredDocs = getFilteredDocuments(section.documents || []);
-                  
-                  // Don't render section if no documents available
-                  if (filteredDocs.length === 0) return null;
-                  
-                  return (
-                    <div key={sectionIndex} className="mb-8">
-                      <h3 
-                        className="font-semibold mb-4"
-                        style={{ color: '#2879b6', fontSize: '20px' }}
-                      >
-                        {section.title}
-                      </h3>
-                      {filteredDocs.length > 0 ? (
-                        <div className="space-y-4">
-                          {filteredDocs.map((doc, docIndex) => (
-                            <div 
-                              key={docIndex} 
-                              className="flex items-center gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+              {/* Sections (Subsidiaries) */}
+              {pageContent.sections?.map((section, sIndex) => {
+                const filteredDocs = getFilteredDocuments(section.documents || []);
+                if (filteredDocs.length === 0) return null;
+
+                return (
+                  <div key={sIndex} className="mb-8">
+                    <h3
+                      className="font-semibold mb-4"
+                      style={{ color: '#2879b6', fontSize: '20px' }}
+                    >
+                      {section.title}
+                    </h3>
+                    <div className="space-y-4">
+                      {filteredDocs.map((doc, dIndex) => (
+                        <div key={dIndex} className="flex items-center gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors">
+                          <div className="flex-shrink-0">
+                            <img
+                              src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg"
+                              alt="PDF"
+                              className="w-12 h-12"
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p
+                              className="font-medium mb-1"
+                              style={{ color: '#484848', fontSize: '16px' }}
                             >
-                              <div className="flex-shrink-0">
-                                <img 
-                                  src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
-                                  alt="PDF" 
-                                  className="w-12 h-12"
-                                />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p 
-                                  className="font-medium mb-1"
-                                  style={{ color: '#484848', fontSize: '16px' }}
-                                >
-                                  {doc.title}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-6 flex-shrink-0">
-                                <a
-                                  href={getPdfUrl(doc.pdfUrl)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
-                                  style={{ color: '#2879b6', fontSize: '16px' }}
-                                >
-                                  View
-                                  <img 
-                                    src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
-                                    alt="View" 
-                                    style={{ width: '16px', height: '16px' }}
-                                  />
-                                </a>
-                                <a
-                                  href={getPdfUrl(doc.pdfUrl)}
-                                  download={doc.title.replace(/[^a-z0-9]/gi, '_') + '.pdf'}
-                                  className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
-                                  style={{ color: '#2879b6', fontSize: '16px' }}
-                                >
-                                  Download
-                                  <svg 
-                                    width="16" 
-                                    height="16" 
-                                    viewBox="0 0 24 24" 
-                                    fill="none" 
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path 
-                                      d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
-                                      fill="#2879b6"
-                                    />
-                                  </svg>
-                                </a>
-                              </div>
-                            </div>
-                          ))}
+                              {doc.title}
+                            </p>
+                            {pageContent.showPublishDate && (
+                              <p style={{ color: '#484848', fontSize: '16px' }}>
+                                Published Date: <time>
+                                  {doc.publishedDate || doc.published_date || doc.date || (doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('en-GB') : (doc.created_at ? new Date(doc.created_at).toLocaleDateString('en-GB') : ''))}
+                                </time>
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-6 flex-shrink-0">
+                            <a
+                              href={getPdfUrl(doc.pdfUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                              style={{ color: '#2879b6', fontSize: '16px' }}
+                            >
+                              View <img src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" alt="View" style={{ width: '16px', height: '16px' }} />
+                            </a>
+                            <a
+                              href={getPdfUrl(doc.pdfUrl)}
+                              download={`${doc.title.replace(/[^a-zA-Z0-9\s]/g, '')}.pdf`}
+                              className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                              style={{ color: '#2879b6', fontSize: '16px' }}
+                            >
+                              Download
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" fill="#2879b6" />
+                              </svg>
+                            </a>
+                          </div>
                         </div>
-                      ) : (
-                        <div className="px-6 py-8 text-center text-gray-500">
-                          No documents available for the selected year.
-                        </div>
-                      )}
+                      ))}
                     </div>
-                  );
-                })
-              ) : (
+                  </div>
+                );
+              })}
+
+              {(!pageContent.sections || pageContent.sections.length === 0) && (
                 <div className="bg-white p-8 text-center text-gray-500">
-                  No sections available.
+                  <p>No financial statements available for this period.</p>
                 </div>
               )}
             </div>

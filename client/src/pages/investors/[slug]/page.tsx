@@ -45,6 +45,7 @@ interface PageContent {
   hasYearFilter: boolean;
   filterItems?: string[];
   sections: Section[];
+  showPublishDate: boolean;
   isActive: boolean;
 }
 
@@ -86,6 +87,7 @@ export default function InvestorDynamicPage() {
         const pageData = {
           ...data,
           filterItems: Array.isArray(filterItems) ? filterItems : [],
+          showPublishDate: !!(data.showPublishDate || (data as any).show_publish_date),
         };
         setPageContent(pageData);
         
@@ -209,13 +211,13 @@ export default function InvestorDynamicPage() {
     // 2. Documents without publishedDate: sort by createdAt/created_at descending (recent to old)
     // 3. Documents without both dates: use original index (higher = newer = appears first)
     return documentsWithIndex.sort((a, b) => {
-      const aPublishedDate = a.publishedDate || a.published_date || a.date;
-      const bPublishedDate = b.publishedDate || b.published_date || b.date;
+     // const aPublishedDate = a.publishedDate || a.published_date || a.date;
+     // const bPublishedDate = b.publishedDate || b.published_date || b.date;
       const aCreatedAt = a.createdAt || a.created_at;
       const bCreatedAt = b.createdAt || b.created_at;
       
       // If both have published dates, sort by published date (descending)
-      if (aPublishedDate && bPublishedDate) {
+     /* if (aPublishedDate && bPublishedDate) {
         const aDate = parseDate(aPublishedDate);
         const bDate = parseDate(bPublishedDate);
         if (aDate && bDate) {
@@ -232,7 +234,7 @@ export default function InvestorDynamicPage() {
       // If only b has published date, it comes first
       if (!aPublishedDate && bPublishedDate) {
         return 1;
-      }
+      }*/
       
       // If neither has published date, sort by created date (descending)
       if (aCreatedAt && bCreatedAt) {
@@ -266,7 +268,7 @@ export default function InvestorDynamicPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
@@ -287,7 +289,7 @@ export default function InvestorDynamicPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection />
-        <section className="py-16 bg-[#e7e7e7]">
+        <section className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center py-12">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">Page Not Found</h2>
@@ -308,7 +310,7 @@ export default function InvestorDynamicPage() {
       <Header />
       <HeroSection title={pageContent.title} />
       
-      <section className="py-16 bg-[#e7e7e7]">
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -529,11 +531,13 @@ export default function InvestorDynamicPage() {
                                     >
                                       {doc.title}
                                     </p>
-                                    <p 
-                                      style={{ color: '#484848', fontSize: '16px' }}
-                                    >
-                                      Published Date: <time>{doc.date}</time>
-                                    </p>
+                                    {pageContent.showPublishDate && doc.date && (
+                                      <p 
+                                        style={{ color: '#484848', fontSize: '16px' }}
+                                      >
+                                        Published Date: <time>{doc.date}</time>
+                                      </p>
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-6 flex-shrink-0">
                                     <button 

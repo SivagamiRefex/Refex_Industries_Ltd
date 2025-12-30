@@ -4,6 +4,8 @@
   "hasYearFilter": false,
   "filterItems": [],
   "isActive": true,
+  "showPublishDate": false,
+  "showCmsPublishDate": false,
   "sections": [
     {
       "title": "Familiarization Programme",

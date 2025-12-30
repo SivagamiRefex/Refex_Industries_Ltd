@@ -28,6 +28,7 @@ interface PageContent {
   id?: number;
   slug: string;
   title: string;
+  showPublishDate: boolean;
   hasYearFilter: boolean;
   filterItems?: string[];
   sections: Section[];
@@ -71,6 +72,7 @@ export default function AnnualReportsPage() {
   const [pageContent, setPageContent] = useState<PageContent>({
     slug: 'annual-reports',
     title: 'Annual Reports',
+    showPublishDate: false,
     hasYearFilter: true,
     filterItems: [],
     sections: [],
@@ -87,15 +89,15 @@ export default function AnnualReportsPage() {
     try {
       const filename = `${title.replace(/[^a-zA-Z0-9\s]/g, '')}.pdf`;
       const fullPdfUrl = getPdfUrl(pdfUrl);
-      
+
       // Check if it's a local upload (starts with API_BASE_URL/uploads)
       const isLocalUpload = pdfUrl.startsWith('/uploads') || fullPdfUrl.includes('/uploads/');
-      
+
       if (isLocalUpload) {
         // For local uploads, fetch directly from the server
         const response = await fetch(fullPdfUrl);
         if (!response.ok) throw new Error('Download failed');
-        
+
         const blob = await response.blob();
         const blobUrl = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -138,9 +140,11 @@ export default function AnnualReportsPage() {
       if (data && data.isActive) {
         // Handle both camelCase and snake_case from API response
         const filterItems = (data.filterItems || (data as any).filter_items || []);
+        const showPublishDate = data.showPublishDate !== undefined ? data.showPublishDate : (data as any).show_publish_date;
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: !!showPublishDate,
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -149,10 +153,10 @@ export default function AnnualReportsPage() {
             ? [...filterItems].sort().reverse()
             : (data.sections && data.sections.length > 0
               ? (data.sections as Section[])
-                  .flatMap((s: Section) => s.documents.map((d: Document) => d.year))
-                  .filter((year: string, index: number, self: string[]) => year && self.indexOf(year) === index)
-                  .sort()
-                  .reverse()
+                .flatMap((s: Section) => s.documents.map((d: Document) => d.year))
+                .filter((year: string, index: number, self: string[]) => year && self.indexOf(year) === index)
+                .sort()
+                .reverse()
               : []);
           if (availableYears.length > 0) {
             setSelectedYear(availableYears[0]);
@@ -165,6 +169,7 @@ export default function AnnualReportsPage() {
       setPageContent({
         slug: 'annual-reports',
         title: 'Annual Reports',
+        showPublishDate: false,
         hasYearFilter: true,
         filterItems: [],
         sections: [],
@@ -178,14 +183,14 @@ export default function AnnualReportsPage() {
   // Helper function to parse DD/MM/YYYY date format
   const parseDate = (dateString: string): Date | null => {
     if (!dateString) return null;
-    
+
     // Try DD/MM/YYYY format first
     const ddmmyyyyMatch = dateString.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (ddmmyyyyMatch) {
       const [, day, month, year] = ddmmyyyyMatch;
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
     }
-    
+
     // Try other common formats
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? null : date;
@@ -194,15 +199,15 @@ export default function AnnualReportsPage() {
   // Filter and sort documents by year and published date
   const getFilteredDocuments = (documents: Document[]): Document[] => {
     let filtered = documents;
-    
+
     // Filter by year if year filter is enabled
     if (pageContent.hasYearFilter && selectedYear) {
       filtered = documents.filter(doc => doc.year === selectedYear);
     }
-    
+
     // Add original index to each document for tracking (newer documents have higher indices)
     const documentsWithIndex = filtered.map((doc, index) => ({ ...doc, _originalIndex: index }));
-    
+
     // Sort documents:
     // 1. Documents with publishedDate/date: sort by date descending (recent to old)
     // 2. Documents without publishedDate: sort by createdAt/created_at descending (recent to old)
@@ -212,7 +217,7 @@ export default function AnnualReportsPage() {
       const bPublishedDate = b.publishedDate || b.published_date || b.date;
       const aCreatedAt = a.createdAt || a.created_at;
       const bCreatedAt = b.createdAt || b.created_at;
-      
+
       // If both have published dates, sort by published date (descending)
       if (aPublishedDate && bPublishedDate) {
         const aDate = parseDate(aPublishedDate);
@@ -221,17 +226,17 @@ export default function AnnualReportsPage() {
           return bDate.getTime() - aDate.getTime();
         }
       }
-      
+
       // If only a has published date, it comes first
       if (aPublishedDate && !bPublishedDate) {
         return -1;
       }
-      
+
       // If only b has published date, it comes first
       if (!aPublishedDate && bPublishedDate) {
         return 1;
       }
-      
+
       // If neither has published date, sort by created date (descending)
       if (aCreatedAt && bCreatedAt) {
         const aDate = parseDate(aCreatedAt);
@@ -241,17 +246,17 @@ export default function AnnualReportsPage() {
         }
         return new Date(bCreatedAt).getTime() - new Date(aCreatedAt).getTime();
       }
-      
+
       // If only a has created date, it comes first
       if (aCreatedAt && !bCreatedAt) {
         return -1;
       }
-      
+
       // If only b has created date, it comes first
       if (!aCreatedAt && bCreatedAt) {
         return 1;
       }
-      
+
       // If neither has dates, use original array index (higher index = newer = appears first)
       return (b._originalIndex || 0) - (a._originalIndex || 0);
     }).map(({ _originalIndex, ...doc }) => doc); // Remove the temporary index field
@@ -268,9 +273,9 @@ export default function AnnualReportsPage() {
   // Get filter options from CMS
   const yearOptions = pageContent.filterItems && pageContent.filterItems.length > 0
     ? pageContent.filterItems.map(year => ({
-        value: year,
-        label: `FY ${year}`
-      }))
+      value: year,
+      label: `FY ${year}`
+    }))
     : [];
 
   if (loading) {
@@ -278,7 +283,7 @@ export default function AnnualReportsPage() {
       <div className="min-h-screen bg-white">
         <Header />
         <HeroSection title={pageContent.title} />
-        <div className="py-16 bg-[#e7e7e7]">
+        <div className="py-16 bg-[#f1f1f1]">
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center py-12">
               <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#7cd244]"></div>
@@ -296,8 +301,8 @@ export default function AnnualReportsPage() {
     <div className="min-h-screen bg-white">
       <Header />
       <HeroSection title={pageContent.title} />
-      
-      <section className="py-16 bg-[#e7e7e7]">
+
+      <section className="py-16 bg-[#f1f1f1]">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             {/* Left Sidebar - Links */}
@@ -327,13 +332,13 @@ export default function AnnualReportsPage() {
                 pageContent.sections.map((section, sectionIndex) => {
                   // Filter and sort documents by selected year and published date
                   const sectionDocs = getFilteredDocuments(section.documents);
-                  
+
                   // Don't render section if no documents available
                   if (sectionDocs.length === 0) return null;
-                  
+
                   return (
                     <div key={sectionIndex} className="mb-8">
-                      <h3 
+                      <h3
                         className="font-semibold mb-4"
                         style={{ color: '#2879b6', fontSize: '20px' }}
                       >
@@ -342,33 +347,34 @@ export default function AnnualReportsPage() {
                       {sectionDocs.length > 0 ? (
                         <div className="space-y-4">
                           {sectionDocs.map((report, index) => (
-                            <div 
-                              key={index} 
+                            <div
+                              key={index}
                               className="flex flex-col gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
                             >
                               {/* First Row: Icon, Title/Year, View/Download */}
                               <div className="flex items-center gap-4">
                                 <div className="flex-shrink-0">
-                                  <img 
-                                    src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
-                                    alt="File icon" 
+                                  <img
+                                    src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg"
+                                    alt="File icon"
                                     className="w-12 h-12"
                                   />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <p 
+                                  <p
                                     className="font-medium mb-1"
                                     style={{ color: '#484848', fontSize: '16px' }}
                                   >
                                     {report.title}
                                   </p>
-                                  {report.year && (
-                                    <p 
-                                      style={{ color: '#484848', fontSize: '16px' }}
-                                    >
-                                      Year: {report.year}
-                                    </p>
-                                  )}
+                                  <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                   
+                                    {pageContent.showPublishDate && report.date && (
+                                      <p style={{ color: '#666', fontSize: '14px' }}>
+                                        Published: {report.date}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
                                 <div className="flex items-center gap-6 flex-shrink-0">
                                   <a
@@ -379,9 +385,9 @@ export default function AnnualReportsPage() {
                                     style={{ color: '#2879b6', fontSize: '16px' }}
                                   >
                                     View
-                                    <img 
-                                      src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
-                                      alt="View" 
+                                    <img
+                                      src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg"
+                                      alt="View"
                                       style={{ width: '16px', height: '16px' }}
                                     />
                                   </a>
@@ -391,15 +397,15 @@ export default function AnnualReportsPage() {
                                     style={{ color: '#2879b6', fontSize: '16px' }}
                                   >
                                     Download
-                                    <svg 
-                                      width="16" 
-                                      height="16" 
-                                      viewBox="0 0 24 24" 
-                                      fill="none" 
+                                    <svg
+                                      width="16"
+                                      height="16"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
                                       xmlns="http://www.w3.org/2000/svg"
                                     >
-                                      <path 
-                                        d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
+                                      <path
+                                        d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z"
                                         fill="#2879b6"
                                       />
                                     </svg>
@@ -409,9 +415,9 @@ export default function AnnualReportsPage() {
                               {/* Second Row: Thumbnail */}
                               {report.thumbnail && (
                                 <div className="mt-2">
-                                  <img 
-                                    src={getImageUrl(report.thumbnail)} 
-                                    alt="Thumbnail" 
+                                  <img
+                                    src={getImageUrl(report.thumbnail)}
+                                    alt="Thumbnail"
                                     className="w-48 h-auto rounded"
                                     onError={(e) => {
                                       // Hide image if it fails to load
@@ -436,7 +442,7 @@ export default function AnnualReportsPage() {
               ) : (
                 // Fallback: if no sections, show all documents in a single section
                 <div className="mb-8">
-                  <h3 
+                  <h3
                     className="font-semibold mb-4"
                     style={{ color: '#2879b6', fontSize: '20px' }}
                   >
@@ -445,33 +451,38 @@ export default function AnnualReportsPage() {
                   {filteredDocuments.length > 0 ? (
                     <div className="space-y-4">
                       {filteredDocuments.map((report, index) => (
-                        <div 
-                          key={index} 
+                        <div
+                          key={index}
                           className="flex flex-col gap-4 p-4 bg-transparent border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
                         >
                           {/* First Row: Icon, Title/Year, View/Download */}
                           <div className="flex items-center gap-4">
                             <div className="flex-shrink-0">
-                              <img 
-                                src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg" 
-                                alt="File icon" 
+                              <img
+                                src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg"
+                                alt="File icon"
                                 className="w-12 h-12"
                               />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p 
+                              <p
                                 className="font-medium mb-1"
                                 style={{ color: '#484848', fontSize: '16px' }}
                               >
                                 {report.title}
                               </p>
-                              {report.year && (
-                                <p 
-                                  style={{ color: '#484848', fontSize: '16px' }}
-                                >
-                                  Year: {report.year}
-                                </p>
-                              )}
+                              <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                {report.year && (
+                                  <p style={{ color: '#484848', fontSize: '16px' }}>
+                                    Year: {report.year}
+                                  </p>
+                                )}
+                                {pageContent.showPublishDate && report.date && (
+                                  <p style={{ color: '#666', fontSize: '14px' }}>
+                                    Published: {report.date}
+                                  </p>
+                                )}
+                              </div>
                             </div>
                             <div className="flex items-center gap-6 flex-shrink-0">
                               <a
@@ -482,9 +493,9 @@ export default function AnnualReportsPage() {
                                 style={{ color: '#2879b6', fontSize: '16px' }}
                               >
                                 View
-                                <img 
-                                  src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg" 
-                                  alt="View" 
+                                <img
+                                  src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg"
+                                  alt="View"
                                   style={{ width: '16px', height: '16px' }}
                                 />
                               </a>
@@ -494,15 +505,15 @@ export default function AnnualReportsPage() {
                                 style={{ color: '#2879b6', fontSize: '16px' }}
                               >
                                 Download
-                                <svg 
-                                  width="16" 
-                                  height="16" 
-                                  viewBox="0 0 24 24" 
-                                  fill="none" 
+                                <svg
+                                  width="16"
+                                  height="16"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
                                   xmlns="http://www.w3.org/2000/svg"
                                 >
-                                  <path 
-                                    d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z" 
+                                  <path
+                                    d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z"
                                     fill="#2879b6"
                                   />
                                 </svg>
@@ -512,9 +523,9 @@ export default function AnnualReportsPage() {
                           {/* Second Row: Thumbnail */}
                           {report.thumbnail && (
                             <div className="mt-2">
-                              <img 
-                                src={getImageUrl(report.thumbnail)} 
-                                alt="Thumbnail" 
+                              <img
+                                src={getImageUrl(report.thumbnail)}
+                                alt="Thumbnail"
                                 className="w-48 h-auto rounded"
                                 onError={(e) => {
                                   // Hide image if it fails to load

@@ -318,6 +318,9 @@ app.post('/api/upload/audio', uploadAudio, (req, res) => {
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// Serve WordPress content files (wp-content/uploads)
+app.use('/wp-content', express.static(path.join(__dirname, 'wp-content')));
+
 // Download PDF from URL and save to server (with optional subfolder)
 app.post('/api/download-pdf-from-url/:subfolder?', async (req, res) => {
   try {

@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { investorsCmsApi } from '../../../../services/api';
 
-const API_BASE_URL = "";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
 interface Document {
   title: string;
+  date: string;
   year: string;
   pdfUrl: string;
   thumbnail?: string;
@@ -19,6 +20,8 @@ interface AnnualReportsPage {
   id?: number;
   slug: string;
   title: string;
+  showPublishDate: boolean;
+  showCmsPublishDate: boolean;
   hasYearFilter: boolean;
   filterItems?: string[]; // Array of filter items (years) for the filter dropdown
   sections: Section[];
@@ -29,6 +32,8 @@ export default function InvestorAnnualReportsCMS() {
   const [pageContent, setPageContent] = useState<AnnualReportsPage>({
     slug: 'annual-reports',
     title: 'Annual Reports',
+    showPublishDate: false,
+    showCmsPublishDate: false,
     hasYearFilter: true,
     filterItems: [],
     sections: [],
@@ -37,9 +42,9 @@ export default function InvestorAnnualReportsCMS() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [editingSection, setEditingSection] = useState<Section | null>(null);
+  const [editingSectionIndex, setEditingSectionIndex] = useState<number | null>(null);
+  const [editingSectionTitle, setEditingSectionTitle] = useState<string>('');
   const [editingDocument, setEditingDocument] = useState<{ sectionIndex: number; document: Document | null; documentIndex: number } | null>(null);
-  const [showSectionForm, setShowSectionForm] = useState(false);
   const [showDocumentForm, setShowDocumentForm] = useState(false);
   const [showFilterItemForm, setShowFilterItemForm] = useState(false);
   const [editingFilterItem, setEditingFilterItem] = useState<string>('');
@@ -47,19 +52,37 @@ export default function InvestorAnnualReportsCMS() {
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pdfUrlInput, setPdfUrlInput] = useState('');
+  const [isManualPdfUrl, setIsManualPdfUrl] = useState(false);
 
-  // Check if URL is a valid external PDF URL
+  useEffect(() => {
+    if (editingDocument?.document?.pdfUrl) {
+      const isManual = !editingDocument.document.pdfUrl.startsWith('/uploads/');
+      setIsManualPdfUrl(isManual);
+      if (isManual) setPdfUrlInput(editingDocument.document.pdfUrl);
+    } else {
+      setIsManualPdfUrl(false);
+      setPdfUrlInput('');
+    }
+  }, [editingDocument?.documentIndex, editingDocument?.sectionIndex]);
   const isExternalPdfUrl = (url: string): boolean => {
     if (!url) return false;
     const trimmed = url.trim();
-    return (trimmed.startsWith('http://') || trimmed.startsWith('https://')) && 
-           !trimmed.startsWith(`${API_BASE_URL}`);
+    return (trimmed.startsWith('http://') || trimmed.startsWith('https://')) &&
+      !trimmed.startsWith(`${API_BASE_URL}`);
   };
 
   // Automatically download PDF from external URL and save to server
   const handlePdfUrlChange = async (url: string) => {
     setPdfUrlInput(url);
-    
+
+    // Also update the document state IMMEDIATELY for manual entry or local paths
+    if (editingDocument && editingDocument.document) {
+      setEditingDocument({
+        ...editingDocument,
+        document: { ...editingDocument.document, pdfUrl: url.trim() }
+      });
+    }
+
     // If it's an external URL, automatically download and save
     if (isExternalPdfUrl(url) && editingDocument?.document) {
       setDownloadingPdf(true);
@@ -79,10 +102,12 @@ export default function InvestorAnnualReportsCMS() {
         }
 
         const data = await response.json();
-        setEditingDocument({
-          ...editingDocument,
-          document: { ...editingDocument.document, pdfUrl: data.pdfUrl }
-        });
+        if (editingDocument && editingDocument.document) {
+          setEditingDocument({
+            ...editingDocument,
+            document: { ...editingDocument.document, pdfUrl: data.pdfUrl }
+          });
+        }
         setPdfUrlInput('');
         setSuccess('PDF downloaded and saved automatically');
         setTimeout(() => setSuccess(''), 3000);
@@ -126,10 +151,12 @@ export default function InvestorAnnualReportsCMS() {
       }
 
       const data = await response.json();
-      setEditingDocument({
-        ...editingDocument,
-        document: { ...editingDocument.document, pdfUrl: data.pdfUrl }
-      });
+      if (editingDocument && editingDocument.document) {
+        setEditingDocument({
+          ...editingDocument,
+          document: { ...editingDocument.document, pdfUrl: data.pdfUrl }
+        });
+      }
       setSuccess('PDF uploaded successfully');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -151,9 +178,13 @@ export default function InvestorAnnualReportsCMS() {
       if (data) {
         // Handle both camelCase and snake_case from API response
         const filterItems = (data.filterItems || (data as any).filter_items || []);
+        const showPublishDate = data.showPublishDate !== undefined ? data.showPublishDate : (data as any).show_publish_date;
+        const showCmsPublishDate = data.showCmsPublishDate !== undefined ? data.showCmsPublishDate : (data as any).show_cms_publish_date;
         const pageData = {
           ...data,
           filterItems: Array.isArray(filterItems) ? filterItems : [],
+          showPublishDate: showPublishDate !== undefined ? !!showPublishDate : false,
+          showCmsPublishDate: showCmsPublishDate !== undefined ? !!showCmsPublishDate : false,
         };
         setPageContent(pageData);
       }
@@ -165,6 +196,8 @@ export default function InvestorAnnualReportsCMS() {
       setPageContent({
         slug: 'annual-reports',
         title: 'Annual Reports',
+        showPublishDate: false,
+        showCmsPublishDate: false,
         hasYearFilter: true,
         filterItems: [],
         sections: [],
@@ -179,13 +212,17 @@ export default function InvestorAnnualReportsCMS() {
     try {
       setError('');
       setSuccess('');
-      
+
       // Ensure filterItems is included and is an array
       const saveData = {
         ...pageContent,
         filterItems: pageContent.filterItems || [],
+        show_publish_date: pageContent.showPublishDate,
+        show_cms_publish_date: pageContent.showCmsPublishDate,
+        has_year_filter: pageContent.hasYearFilter,
+        is_active: pageContent.isActive,
       };
-      
+
       // Check if page exists
       let existingPage;
       try {
@@ -201,7 +238,7 @@ export default function InvestorAnnualReportsCMS() {
         await investorsCmsApi.createPageContent(saveData);
         setSuccess('Annual Reports page created successfully');
       }
-      
+
       // Reload the data to ensure we have the latest from the server
       await loadPageContent();
       setTimeout(() => setSuccess(''), 3000);
@@ -211,17 +248,32 @@ export default function InvestorAnnualReportsCMS() {
   };
 
   const handleAddSection = () => {
-    setEditingSection({
-      title: '',
+    const newSection: Section = {
+      title: 'NEW CATEGORY',
       documents: [],
-    });
-    setShowSectionForm(true);
-    setError('');
+    };
+    const updatedSections = [...pageContent.sections, newSection];
+    setPageContent({ ...pageContent, sections: updatedSections });
+    setEditingSectionIndex(updatedSections.length - 1);
+    setEditingSectionTitle('NEW CATEGORY');
   };
 
-  const handleEditSection = (section: Section, index: number) => {
-    setEditingSection({ ...section });
-    setShowSectionForm(true);
+  const handleEditSection = (index: number, title: string) => {
+    setEditingSectionIndex(index);
+    setEditingSectionTitle(title);
+  };
+
+  const handleSaveSection = (index: number) => {
+    if (!editingSectionTitle.trim()) {
+      setError('Section title is required');
+      return;
+    }
+
+    const updatedSections = [...pageContent.sections];
+    updatedSections[index].title = editingSectionTitle.trim();
+    setPageContent({ ...pageContent, sections: updatedSections });
+    setEditingSectionIndex(null);
+    setEditingSectionTitle('');
     setError('');
   };
 
@@ -234,40 +286,12 @@ export default function InvestorAnnualReportsCMS() {
     setPageContent({ ...pageContent, sections: updatedSections });
   };
 
-  const handleSaveSection = () => {
-    if (!editingSection || !editingSection.title.trim()) {
-      setError('Section title is required');
-      return;
-    }
-
-    const updatedSections = [...pageContent.sections];
-    const existingIndex = updatedSections.findIndex(s => s.title === editingSection.title && s !== editingSection);
-    
-    if (existingIndex >= 0) {
-      setError('A section with this title already exists');
-      return;
-    }
-
-    const sectionIndex = updatedSections.findIndex(s => s.title === editingSection.title);
-    if (sectionIndex >= 0) {
-      // Update existing section
-      updatedSections[sectionIndex] = editingSection;
-    } else {
-      // Add new section
-      updatedSections.push(editingSection);
-    }
-
-    setPageContent({ ...pageContent, sections: updatedSections });
-    setShowSectionForm(false);
-    setEditingSection(null);
-    setError('');
-  };
-
   const handleAddDocument = (sectionIndex: number) => {
     setEditingDocument({
       sectionIndex,
       document: {
         title: '',
+        date: '',
         year: '',
         pdfUrl: '',
         thumbnail: '',
@@ -332,6 +356,199 @@ export default function InvestorAnnualReportsCMS() {
     setError('');
   };
 
+  const renderDocumentFields = () => {
+    if (!editingDocument?.document) return null;
+    const doc = editingDocument.document;
+
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <div className="md:col-span-2 group">
+          <label className="block text-[10px] font-black text-gray-400 mb-2 ml-1 uppercase tracking-widest group-focus-within:text-blue-600 transition-colors">
+            Document Title *
+          </label>
+          <input
+            type="text"
+            className="w-full bg-gray-50/50 border-2 border-gray-100 rounded-2xl py-4 px-6 font-bold text-gray-800 focus:bg-white focus:border-blue-500 transition-all outline-none"
+            value={doc.title}
+            onChange={(e) => {
+              if (editingDocument && editingDocument.document) {
+                setEditingDocument({
+                  ...editingDocument,
+                  document: { ...doc, title: e.target.value }
+                });
+              }
+            }}
+            placeholder="e.g., Annual Report 2024-25"
+          />
+        </div>
+
+        {pageContent.showCmsPublishDate && (
+          <div className="group">
+            <label className="block text-[10px] font-black text-gray-400 mb-2 ml-1 uppercase tracking-widest group-focus-within:text-blue-600 transition-colors">
+              Published Date
+            </label>
+            <input
+              type="text"
+              className="w-full bg-gray-50/50 border-2 border-gray-100 rounded-2xl py-4 px-6 font-bold text-gray-800 focus:bg-white focus:border-blue-500 transition-all outline-none"
+              value={doc.date}
+              onChange={(e) => {
+                if (editingDocument && editingDocument.document) {
+                  setEditingDocument({
+                    ...editingDocument,
+                    document: { ...doc, date: e.target.value }
+                  });
+                }
+              }}
+              placeholder="e.g., 04/11/2025"
+            />
+          </div>
+        )}
+
+        {pageContent.hasYearFilter && (
+          <div className="group">
+            <label className="block text-[10px] font-black text-gray-400 mb-2 ml-1 uppercase tracking-widest group-focus-within:text-blue-600 transition-colors">
+              Year *
+            </label>
+            <select
+              className="w-full bg-gray-50/50 border-2 border-gray-100 rounded-2xl py-4 px-6 font-bold text-gray-800 focus:bg-white focus:border-blue-500 transition-all outline-none appearance-none"
+              value={doc.year}
+              onChange={(e) => {
+                if (editingDocument && editingDocument.document) {
+                  setEditingDocument({
+                    ...editingDocument,
+                    document: { ...doc, year: e.target.value }
+                  });
+                }
+              }}
+            >
+              <option value="">Select Year</option>
+              {(pageContent.filterItems || []).map((year) => (
+                <option key={year} value={year}>
+                  FY {year}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="md:col-span-2 space-y-4">
+          <div className="flex justify-between items-center bg-gray-50/50 p-4 rounded-2xl border border-gray-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white text-blue-600 flex items-center justify-center shadow-sm">
+                <i className={isManualPdfUrl ? "ri-link" : "ri-upload-cloud-2-line"}></i>
+              </div>
+              <span className="text-sm font-black text-gray-700 uppercase tracking-tight">PDF Document *</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Manual URL</span>
+              <button
+                type="button"
+                onClick={() => setIsManualPdfUrl(!isManualPdfUrl)}
+                className={`relative inline-flex h-6 w-12 flex-shrink-0 cursor-pointer rounded-full border-4 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${isManualPdfUrl ? 'bg-blue-600' : 'bg-gray-200'}`}
+              >
+                <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xl ring-0 transition duration-200 ease-in-out ${isManualPdfUrl ? 'translate-x-6' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          </div>
+
+          {isManualPdfUrl ? (
+            <div className="relative group animate-in slide-in-from-top-2 duration-300">
+              <input
+                type="text"
+                className={`w-full bg-gray-50/50 border-2 border-gray-100 rounded-2xl py-4 px-12 font-bold text-gray-800 focus:bg-white focus:border-blue-500 transition-all outline-none ${downloadingPdf ? 'opacity-50' : ''}`}
+                value={pdfUrlInput}
+                onChange={(e) => handlePdfUrlChange(e.target.value)}
+                placeholder="https://example.com/report.pdf"
+                disabled={downloadingPdf}
+              />
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-blue-600 transition-colors">
+                <i className="ri-global-line text-xl"></i>
+              </div>
+              {downloadingPdf && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin">
+                  <i className="ri-loader-4-line text-blue-600 text-xl"></i>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="animate-in slide-in-from-top-2 duration-300">
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={handlePdfUpload}
+                id="pdf-upload-standard-ann"
+                className="hidden"
+                disabled={uploadingPdf}
+              />
+              <label
+                htmlFor="pdf-upload-standard-ann"
+                className={`flex flex-col items-center justify-center p-10 border-2 border-dashed rounded-[2rem] transition-all cursor-pointer group ${uploadingPdf ? 'bg-gray-50 border-gray-200 opacity-70' : 'bg-blue-50/20 border-blue-100 hover:border-blue-500 hover:bg-blue-50/50'}`}
+              >
+                {uploadingPdf ? (
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="animate-spin w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full" />
+                    <span className="text-sm font-black text-blue-600 tracking-widest animate-pulse">UPLOADING...</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 bg-white text-blue-600 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-500/10 mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <i className="ri-upload-cloud-2-line text-3xl"></i>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-black text-gray-700 tracking-tight">CLICK TO SELECT PDF ASSET</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">MAXIMUM FILE SIZE: 50MB</p>
+                    </div>
+                  </>
+                )}
+              </label>
+            </div>
+          )}
+
+          {doc.pdfUrl && (
+            <div className="flex items-center gap-4 p-5 bg-[#1F2937] rounded-3xl border border-gray-800 overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300 group/badge relative">
+              <div className="absolute inset-0 bg-blue-600/5 opacity-0 group-hover/badge:opacity-100 transition-opacity"></div>
+              <div className="w-12 h-12 bg-red-500 text-white rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/20 z-10">
+                <i className="ri-file-pdf-fill text-2xl"></i>
+              </div>
+              <div className="flex-1 min-w-0 z-10">
+                <p className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-1">Attached Asset Path</p>
+                <p className="text-sm font-bold text-blue-400 truncate tracking-tight">{doc.pdfUrl}</p>
+              </div>
+              <a
+                href={doc.pdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="w-10 h-10 bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 rounded-xl flex items-center justify-center transition-all z-10 border border-gray-700/50 shadow-xl"
+              >
+                <i className="ri-external-link-line text-lg"></i>
+              </a>
+            </div>
+          )}
+        </div>
+
+        <div className="md:col-span-2 group">
+          <label className="block text-[10px] font-black text-gray-400 mb-2 ml-1 uppercase tracking-widest group-focus-within:text-blue-600 transition-colors">
+            Thumbnail URL (Optional)
+          </label>
+          <input
+            type="text"
+            className="w-full bg-gray-50/50 border-2 border-gray-100 rounded-2xl py-4 px-6 font-bold text-gray-800 focus:bg-white focus:border-blue-500 transition-all outline-none"
+            value={doc.thumbnail || ''}
+            onChange={(e) => {
+              if (editingDocument && editingDocument.document) {
+                setEditingDocument({
+                  ...editingDocument,
+                  document: { ...doc, thumbnail: e.target.value }
+                });
+              }
+            }}
+            placeholder="https://example.com/thumbnail.png"
+          />
+        </div>
+      </div>
+    );
+  };
+
   const handleAddFilterItem = () => {
     setEditingFilterItem('');
     setEditingFilterIndex(-1);
@@ -340,8 +557,8 @@ export default function InvestorAnnualReportsCMS() {
   };
 
   const handleEditFilterItem = (index: number) => {
-    const filterItems = pageContent.filterItems || [];
-    setEditingFilterItem(filterItems[index]);
+    const items = pageContent.filterItems || [];
+    setEditingFilterItem(items[index]);
     setEditingFilterIndex(index);
     setShowFilterItemForm(true);
     setError('');
@@ -363,7 +580,7 @@ export default function InvestorAnnualReportsCMS() {
     }
 
     const filterItems = [...(pageContent.filterItems || [])];
-    
+
     // Check for duplicates
     if (filterItems.includes(editingFilterItem.trim()) && editingFilterIndex < 0) {
       setError('This filter item already exists');
@@ -371,14 +588,12 @@ export default function InvestorAnnualReportsCMS() {
     }
 
     if (editingFilterIndex >= 0) {
-      // Update existing filter item
       filterItems[editingFilterIndex] = editingFilterItem.trim();
     } else {
-      // Add new filter item
       filterItems.push(editingFilterItem.trim());
     }
 
-    // Sort filter items in descending order (newest first)
+    // Sort descending
     filterItems.sort((a, b) => b.localeCompare(a));
 
     setPageContent({ ...pageContent, filterItems });
@@ -400,426 +615,398 @@ export default function InvestorAnnualReportsCMS() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Annual Reports Page CMS</h2>
-        <p className="text-sm text-gray-600 mt-1">Manage sections and documents for the Annual Reports page</p>
+    <div className="bg-white rounded-lg shadow-sm p-6" style={{ fontFamily: '"Open Sans", sans-serif' }}>
+      <div className="mb-10">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Annual Reports Page CMS</h2>
+            <p className="text-sm text-gray-400 mt-1 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+              Manage categories and reports for the Annual Reports page
+            </p>
+          </div>
+          <button
+            onClick={handleSave}
+            className="group relative px-8 py-3 bg-[#2563EB] text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-200 flex items-center gap-2"
+          >
+            <i className="ri-check-line text-lg"></i>
+            <span className="font-bold tracking-wide">SAVE ALL CHANGES</span>
+          </button>
+        </div>
       </div>
 
       {/* Messages */}
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-          {error}
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <i className="ri-error-warning-fill text-xl"></i>
+          <span className="font-medium">{error}</span>
         </div>
       )}
       {success && (
-        <div className="mb-4 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg">
-          {success}
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <i className="ri-checkbox-circle-fill text-xl"></i>
+          <span className="font-medium">{success}</span>
         </div>
       )}
 
       {/* General Settings */}
-      <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Page Title *
-            </label>
-            <input
-              type="text"
-              className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-              value={pageContent.title}
-              onChange={(e) => setPageContent({ ...pageContent, title: e.target.value })}
-              placeholder="Annual Reports"
-            />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
+        <div className="lg:col-span-8 bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <i className="ri-settings-3-line text-xl"></i>
+            </div>
+            <h3 className="text-xl font-black text-gray-900 tracking-tight">General Settings</h3>
           </div>
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="hasYearFilter"
-              checked={pageContent.hasYearFilter}
-              onChange={(e) => setPageContent({ ...pageContent, hasYearFilter: e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="hasYearFilter" className="ml-2 block text-sm text-gray-900">
-              Enable Year Filter
-            </label>
-          </div>
-          <div className="flex items-center">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={pageContent.isActive}
-              onChange={(e) => setPageContent({ ...pageContent, isActive: e.target.checked })}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-              Active
-            </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <div className="md:col-span-2 group">
+              <label className="block text-[10px] font-black text-gray-400 mb-2 ml-1 uppercase tracking-widest group-focus-within:text-blue-600 transition-colors">Page Title *</label>
+              <input
+                type="text"
+                className="w-full bg-gray-50/50 border-2 border-gray-100 rounded-2xl py-4 px-6 font-bold text-gray-800 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all outline-none"
+                value={pageContent.title}
+                onChange={(e) => setPageContent({ ...pageContent, title: e.target.value })}
+                placeholder="Annual Reports"
+              />
+            </div>
+            <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border-2 border-transparent hover:border-blue-100 transition-all cursor-pointer group">
+              <input
+                type="checkbox"
+                id="hasYearFilter"
+                checked={pageContent.hasYearFilter}
+                onChange={(e) => setPageContent({ ...pageContent, hasYearFilter: e.target.checked })}
+                className="h-6 w-6 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-lg cursor-pointer"
+              />
+              <label htmlFor="hasYearFilter" className="text-sm font-black text-gray-700 cursor-pointer select-none group-hover:text-blue-600 flex-1">Enable Year Filter</label>
+            </div>
+            <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border-2 border-transparent hover:border-blue-100 transition-all cursor-pointer group">
+              <input
+                type="checkbox"
+                id="showCmsPublishDateAnn"
+                checked={pageContent.showCmsPublishDate}
+                onChange={(e) => setPageContent({ ...pageContent, showCmsPublishDate: e.target.checked })}
+                className="h-6 w-6 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-lg cursor-pointer"
+              />
+              <label htmlFor="showCmsPublishDateAnn" className="text-sm font-black text-gray-700 cursor-pointer select-none group-hover:text-blue-600 flex-1">CMS Published Date</label>
+            </div>
+            <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border-2 border-transparent hover:border-blue-100 transition-all cursor-pointer group">
+              <input
+                type="checkbox"
+                id="showPublishDateAnn"
+                checked={pageContent.showPublishDate}
+                onChange={(e) => setPageContent({ ...pageContent, showPublishDate: e.target.checked })}
+                className="h-6 w-6 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-lg cursor-pointer"
+              />
+              <label htmlFor="showPublishDateAnn" className="text-sm font-black text-gray-700 cursor-pointer select-none group-hover:text-blue-600 flex-1">Public Website Dates</label>
+            </div>
+            <div className="flex items-center gap-4 p-4 bg-gray-50/50 rounded-2xl border-2 border-transparent hover:border-blue-100 transition-all cursor-pointer group">
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={pageContent.isActive}
+                onChange={(e) => setPageContent({ ...pageContent, isActive: e.target.checked })}
+                className="h-6 w-6 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-lg cursor-pointer"
+              />
+              <label htmlFor="isActive" className="text-sm font-black text-gray-700 cursor-pointer select-none group-hover:text-blue-600 flex-1">Page Active</label>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Filter Items Management */}
-      {pageContent.hasYearFilter && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex justify-between items-center mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Filter Items (Years)</h3>
-              <p className="text-sm text-gray-600 mt-1">Manage the years available in the filter dropdown</p>
+        {/* Filter Management */}
+        <div className={`lg:col-span-4 transition-all duration-500 ${pageContent.hasYearFilter ? 'opacity-100 translate-y-0' : 'opacity-50 translate-y-4 pointer-events-none grayscale'}`}>
+          <div className="h-full bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm flex flex-col relative group/years">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                <i className="ri-calendar-event-line text-xl"></i>
+              </div>
+              <h3 className="text-xl font-black text-gray-900 tracking-tight">Years</h3>
             </div>
+
             <button
               onClick={handleAddFilterItem}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="absolute top-8 right-8 w-10 h-10 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 flex items-center justify-center group/add active:scale-95 z-20"
+              title="Add Filter Year"
             >
-              <i className="ri-add-line mr-2"></i>
-              Add Filter Item
+              <i className="ri-add-line text-2xl font-bold transition-transform group-hover/add:rotate-90"></i>
             </button>
-          </div>
 
-          {/* Filter Item Form */}
-          {showFilterItemForm && (
-            <div className="mb-4 p-4 bg-white rounded-lg border border-gray-300">
-              <h4 className="text-md font-semibold text-gray-900 mb-4">
-                {editingFilterIndex >= 0 ? 'Edit Filter Item' : 'Add New Filter Item'}
-              </h4>
-              <div className="flex gap-3">
+            {showFilterItemForm && (
+              <div className="mb-6 p-5 bg-blue-50/50 rounded-2xl border-2 border-blue-100 shadow-sm animate-in zoom-in-95 duration-300">
                 <input
                   type="text"
-                  className="flex-1 border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  className="w-full bg-white border-2 border-gray-100 rounded-xl py-3 px-4 font-bold text-gray-800 focus:border-blue-500 transition-all outline-none mb-4"
                   value={editingFilterItem}
                   onChange={(e) => setEditingFilterItem(e.target.value)}
                   placeholder="e.g., 2025-26"
                 />
-                <button
-                  onClick={handleSaveFilterItem}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingFilterItem('');
-                    setEditingFilterIndex(-1);
-                    setShowFilterItemForm(false);
-                    setError('');
-                  }}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Filter Items List */}
-          {pageContent.filterItems && Array.isArray(pageContent.filterItems) && pageContent.filterItems.length > 0 ? (
-            <div className="space-y-2">
-              {pageContent.filterItems.map((item, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-white rounded border border-gray-200">
-                  <span className="text-sm font-medium text-gray-900">FY {item}</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditFilterItem(index)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteFilterItem(index)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                <div className="flex gap-2">
+                  <button onClick={handleSaveFilterItem} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl font-black text-[10px] tracking-widest uppercase hover:bg-blue-700 shadow-md shadow-blue-100">SAVE</button>
+                  <button onClick={() => { setShowFilterItemForm(false); setEditingFilterItem(''); setEditingFilterIndex(-1); }} className="flex-1 py-2.5 bg-white text-gray-500 rounded-xl font-black text-[10px] tracking-widest uppercase hover:bg-gray-50 border border-gray-100">CANCEL</button>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-4 text-gray-500 text-sm">
-              No filter items found. Click "Add Filter Item" to create one.
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            )}
 
-      {/* Sections */}
-      <div className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Sections</h3>
+            <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar-blue pr-1 max-h-[350px]">
+              {(pageContent.filterItems || []).length === 0 ? (
+                <div className="h-32 flex flex-col items-center justify-center text-gray-300 gap-2 border-2 border-dashed border-gray-50 rounded-[2rem]">
+                  <i className="ri-calendar-line text-3xl opacity-20"></i>
+                  <span className="text-[10px] font-black uppercase tracking-widest italic">No Years Found</span>
+                </div>
+              ) : (
+                (pageContent.filterItems || []).map((item, index) => (
+                  <div key={index} className="group flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-50 hover:border-blue-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300">
+                    <span className="font-black text-gray-700 tracking-tight text-sm">FY {item}</span>
+                    <div className="flex gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300">
+                      <button onClick={() => handleEditFilterItem(index)} className="w-8 h-8 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-blue-50"><i className="ri-pencil-line"></i></button>
+                      <button onClick={() => handleDeleteFilterItem(index)} className="w-8 h-8 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-red-50"><i className="ri-delete-bin-line"></i></button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-10 mt-12">
+        <div className="flex justify-between items-center bg-gray-900 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-gray-200 overflow-hidden relative group">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl group-hover:bg-blue-500/20 transition-all duration-700"></div>
+          <div className="relative z-10">
+            <h3 className="text-3xl font-black uppercase tracking-tighter italic">Content Categories</h3>
+            <p className="text-gray-400 text-[10px] font-black tracking-widest mt-2 uppercase">Total Categories Organized: {pageContent.sections.length}</p>
+          </div>
           <button
             onClick={handleAddSection}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="relative z-10 px-8 py-4 bg-white text-[#2563EB] rounded-2xl hover:bg-blue-50 transition-all font-black text-xs tracking-widest uppercase flex items-center gap-3 shadow-xl active:scale-95"
           >
-            <i className="ri-add-line mr-2"></i>
-            Add Section
+            <i className="ri-folder-add-fill text-xl"></i> CREATE NEW CATEGORY
           </button>
         </div>
 
-        {/* Section Form */}
-        {showSectionForm && editingSection && (
-          <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h4 className="text-md font-semibold text-gray-900 mb-4">
-              {pageContent.sections.find(s => s.title === editingSection.title && s !== editingSection) ? 'Edit Section' : 'Add New Section'}
-            </h4>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Section Title *
-                </label>
-                <input
-                  type="text"
-                  className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={editingSection.title}
-                  onChange={(e) => setEditingSection({ ...editingSection, title: e.target.value })}
-                  placeholder="e.g., Annual Reports"
-                />
-              </div>
-              <div className="flex gap-3">
-                <button
-                  onClick={handleSaveSection}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Save Section
-                </button>
-                <button
-                  onClick={() => {
-                    setShowSectionForm(false);
-                    setEditingSection(null);
-                    setError('');
-                  }}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Sections List */}
-        {pageContent.sections.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No sections found. Click "Add Section" to create one.
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {pageContent.sections.map((section, sectionIndex) => (
-              <div key={sectionIndex} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h4 className="text-md font-semibold text-gray-900">{section.title}</h4>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => handleEditSection(section, sectionIndex)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteSection(sectionIndex)}
-                      className="text-red-600 hover:text-red-800 text-sm"
-                    >
-                      Delete
-                    </button>
+        <div className="grid grid-cols-1 gap-12 pb-20">
+          {pageContent.sections.length === 0 ? (
+            <div className="py-20 flex flex-col items-center justify-center bg-gray-50/50 rounded-[3rem] border-2 border-dashed border-gray-200 grayscale opacity-60">
+              <div className="w-24 h-24 rounded-[2rem] bg-white shadow-xl flex items-center justify-center mb-6">
+                <i className="ri-folder-open-line text-4xl text-gray-300"></i>
+              </div>
+              <h3 className="text-xl font-black text-gray-400 uppercase tracking-tighter">Repository Empty</h3>
+              <p className="text-gray-400 text-sm font-bold tracking-widest mt-2">NO DATA CATEGORIES DETECTED</p>
+            </div>
+          ) : (
+            pageContent.sections.map((section, sectionIndex) => (
+              <div key={sectionIndex} className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
+                {/* Section Header */}
+                <div className="p-8 border-b border-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 bg-white">
+                  <div className="flex items-center gap-5 flex-1 w-full">
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-2xl border border-blue-100/50 shadow-sm">
+                      <i className="ri-folder-info-fill"></i>
+                    </div>
+                    <div className="flex-1">
+                      {editingSectionIndex === sectionIndex ? (
+                        <div className="flex items-center gap-2 w-full">
+                          <input
+                            type="text"
+                            className="flex-1 bg-gray-50 border-2 border-blue-200 rounded-xl px-4 py-2 font-black text-gray-800 outline-none focus:bg-white focus:border-blue-500 transition-all text-xl uppercase tracking-tight"
+                            value={editingSectionTitle}
+                            onChange={(e) => setEditingSectionTitle(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveSection(sectionIndex)}
+                            autoFocus
+                          />
+                          <button onClick={() => handleSaveSection(sectionIndex)} className="w-10 h-10 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all shadow-md flex items-center justify-center">
+                            <i className="ri-check-line text-xl"></i>
+                          </button>
+                          <button onClick={() => { setEditingSectionIndex(null); setEditingSectionTitle(''); }} className="w-10 h-10 bg-white text-gray-400 border border-gray-100 rounded-xl hover:bg-gray-50 transition-all flex items-center justify-center">
+                            <i className="ri-close-line text-xl"></i>
+                          </button>
+                        </div>
+                      ) : (
+                        <h4 className="text-xl font-black text-gray-900 tracking-tight uppercase mb-1 cursor-pointer hover:text-blue-600" onClick={() => handleEditSection(sectionIndex, section.title)}>
+                          {section.title}
+                        </h4>
+                      )}
+                      <div className="flex items-center gap-3">
+                        <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-lg border border-blue-100/50 shadow-sm">{section.documents.length} DOCUMENTS</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                {/* Documents */}
-                <div className="mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-gray-600">Documents ({section.documents.length})</span>
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
                     <button
                       onClick={() => handleAddDocument(sectionIndex)}
-                      className="text-sm text-blue-600 hover:text-blue-800"
+                      className="flex-1 sm:flex-none px-5 py-2.5 bg-white text-[#2563EB] hover:bg-blue-50 rounded-xl transition-all border border-blue-100 flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-sm"
                     >
-                      + Add Document
+                      <i className="ri-add-circle-line text-lg"></i>
+                      <span>Add Document</span>
                     </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditSection(sectionIndex, section.title)}
+                        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-gray-100"
+                      >
+                        <i className="ri-pencil-line text-lg"></i>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteSection(sectionIndex)}
+                        className="w-10 h-10 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all border border-gray-100"
+                      >
+                        <i className="ri-delete-bin-line text-lg"></i>
+                      </button>
+                    </div>
                   </div>
+                </div>
+
+                {/* Documents List within Section */}
+                <div className="p-6">
                   {section.documents.length === 0 ? (
-                    <p className="text-sm text-gray-500">No documents in this section.</p>
+                    <div className="text-center py-8 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                      <p className="text-sm font-medium text-gray-500">No documents in this section.</p>
+                      <button
+                        onClick={() => handleAddDocument(sectionIndex)}
+                        className="text-blue-600 hover:underline text-xs font-bold mt-2"
+                      >
+                        + Add first document
+                      </button>
+                    </div>
                   ) : (
-                    <div className="space-y-2">
-                      {section.documents.map((doc, docIndex) => (
-                        <div key={docIndex} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{doc.title}</p>
-                            <p className="text-xs text-gray-500">
-                              Year: {doc.year || 'N/A'} {doc.thumbnail ? '| Has Thumbnail' : ''}
-                            </p>
+                    <div className="space-y-4">
+                      {section.documents.map((doc, docIndex) => {
+                        const isEditing = editingDocument?.sectionIndex === sectionIndex && editingDocument?.documentIndex === docIndex;
+                        return (
+                          <div key={docIndex} className={`group/doc rounded-2xl border transition-all duration-300 ${isEditing ? 'border-blue-400 ring-4 ring-blue-50 bg-blue-50/30 overflow-hidden' : 'border-gray-100 hover:border-gray-200 bg-white hover:bg-gray-50/30'}`}>
+                            {/* Standard View */}
+                            {!isEditing ? (
+                              <div className="flex items-center justify-between p-5">
+                                <div className="flex items-center gap-5 flex-1 min-w-0">
+                                  <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm border border-red-100 group-hover/doc:scale-105 transition-transform duration-300">
+                                    <i className="ri-file-pdf-2-fill text-3xl"></i>
+                                  </div>
+                                  <div className="min-w-0">
+                                    <h5 className="text-base font-black text-gray-900 tracking-tight group-hover/doc:text-blue-600 transition-colors uppercase">{doc.title}</h5>
+                                    <div className="flex items-center gap-4 mt-2">
+                                      {doc.year && (
+                                        <span className="flex items-center gap-1.5 text-[10px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-lg border border-blue-100 uppercase tracking-widest shadow-sm">
+                                          FY {doc.year}
+                                        </span>
+                                      )}
+                                      {pageContent.showPublishDate && doc.date && (
+                                        <span className="flex items-center gap-1.5 text-[10px] font-black bg-gray-50 text-gray-500 px-3 py-1 rounded-lg border border-gray-100 uppercase tracking-widest">
+                                          <i className="ri-calendar-line text-blue-400"></i> {doc.date}
+                                        </span>
+                                      )}
+                                      <span className="flex items-center gap-1.5 text-[10px] text-gray-400 font-bold truncate max-w-[250px]">
+                                        <i className="ri-link text-blue-200"></i> {doc.pdfUrl}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex gap-2 ml-6">
+                                  <button
+                                    onClick={() => handleEditDocument(sectionIndex, docIndex)}
+                                    className="w-10 h-10 flex items-center justify-center text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all border border-blue-50 bg-white shadow-sm"
+                                    title="Edit Document"
+                                  >
+                                    <i className="ri-edit-line text-lg"></i>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteDocument(sectionIndex, docIndex)}
+                                    className="w-10 h-10 flex items-center justify-center text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all border border-red-50 bg-white shadow-sm"
+                                    title="Delete Document"
+                                  >
+                                    <i className="ri-delete-bin-line text-lg"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              /* Inline Edit Mode */
+                              <div className="animate-in slide-in-from-top-4 duration-400">
+                                <div className="px-6 py-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white flex justify-between items-center">
+                                  <div className="flex items-center gap-2">
+                                    <i className="ri-edit-circle-line text-xl"></i>
+                                    <h5 className="font-bold tracking-tight uppercase">Editing Document</h5>
+                                  </div>
+                                  <span className="text-[10px] bg-white/20 px-2 py-1 rounded-full font-bold uppercase tracking-wider">DOC #{docIndex + 1}</span>
+                                </div>
+                                <div className="p-8">
+                                  {renderDocumentFields()}
+                                  <div className="flex justify-end gap-3 mt-8 pt-6 border-t border-gray-100">
+                                    <button
+                                      onClick={() => setEditingDocument(null)}
+                                      className="px-6 py-2.5 bg-white text-gray-600 rounded-xl hover:bg-gray-50 transition-all font-bold border border-gray-200 active:scale-95"
+                                    >
+                                      CANCEL
+                                    </button>
+                                    <button
+                                      onClick={handleSaveDocument}
+                                      className="px-8 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold shadow-lg shadow-blue-100 active:scale-95 flex items-center gap-2"
+                                    >
+                                      <i className="ri-check-line text-xl"></i> DONE EDITING
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEditDocument(sectionIndex, docIndex)}
-                              className="text-blue-600 hover:text-blue-800 text-xs"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteDocument(sectionIndex, docIndex)}
-                              className="text-red-600 hover:text-red-800 text-xs"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
 
-      {/* Document Form */}
-      {showDocumentForm && editingDocument && editingDocument.document && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 className="text-md font-semibold text-gray-900 mb-4">
-            {editingDocument.documentIndex >= 0 ? 'Edit Document' : 'Add New Document'}
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Document Title *
-              </label>
-              <input
-                type="text"
-                className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={editingDocument.document.title}
-                onChange={(e) => setEditingDocument({
-                  ...editingDocument,
-                  document: { ...editingDocument.document, title: e.target.value }
-                })}
-                placeholder="e.g., Annual Report 2024-25"
-              />
-            </div>
-            {pageContent.hasYearFilter && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Year *
-                </label>
-                <input
-                  type="text"
-                  className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  value={editingDocument.document.year}
-                  onChange={(e) => setEditingDocument({
-                    ...editingDocument,
-                    document: { ...editingDocument.document, year: e.target.value }
-                  })}
-                  placeholder="e.g., 2024-25"
-                />
+      {/* Modern Dialog for New Documents */}
+      {showDocumentForm && editingDocument && editingDocument.documentIndex === -1 && (
+        <div className="fixed inset-0 bg-gray-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2.5rem] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-500 border border-white">
+            <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-blue-600 to-blue-800 text-white relative">
+              <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+                <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl"></div>
               </div>
-            )}
-            <div className={pageContent.hasYearFilter ? 'md:col-span-2' : 'md:col-span-2'}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                PDF Document *
-              </label>
-              
-              {/* Option 1: Upload PDF file */}
-              <div className="flex items-center gap-4 mb-3">
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  onChange={handlePdfUpload}
-                  className="hidden"
-                  id="annualReportPdfUpload"
-                  disabled={uploadingPdf || downloadingPdf}
-                />
-                <label
-                  htmlFor="annualReportPdfUpload"
-                  className={`px-4 py-2 rounded-lg cursor-pointer transition-colors ${
-                    uploadingPdf || downloadingPdf
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : 'bg-green-600 text-white hover:bg-green-700'
-                  }`}
+              <div className="relative z-10 flex items-center gap-4">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-2xl border border-white/30">
+                  <i className="ri-file-add-line"></i>
+                </div>
+                <div>
+                  <h4 className="text-xl font-black uppercase tracking-tighter italic">Attach New Report</h4>
+                  <p className="text-blue-100/80 text-[10px] font-bold tracking-widest mt-0.5">UPLOADING TO: {(editingDocument && pageContent.sections[editingDocument.sectionIndex]?.title) || 'N/A'}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowDocumentForm(false)}
+                className="relative z-10 w-10 h-10 flex items-center justify-center bg-black/10 hover:bg-black/20 text-white rounded-xl transition-all"
+              >
+                <i className="ri-close-line text-2xl"></i>
+              </button>
+            </div>
+
+            <div className="p-10 overflow-y-auto custom-scrollbar flex-1 bg-white">
+              <div className="mb-10 p-6 bg-blue-50/30 rounded-[2rem] border-2 border-blue-50">
+                {renderDocumentFields()}
+              </div>
+
+              <div className="flex gap-4 justify-end items-center sticky bottom-0 bg-white pt-6 border-t border-gray-50 mt-4">
+                <button
+                  onClick={() => setShowDocumentForm(false)}
+                  className="px-8 py-3.5 bg-gray-50 text-gray-500 rounded-2xl font-black text-xs hover:bg-gray-100 transition-all uppercase tracking-widest"
                 >
-                  {uploadingPdf ? 'Uploading...' : 'Upload PDF File'}
-                </label>
+                  DISCARD
+                </button>
+                <button
+                  onClick={handleSaveDocument}
+                  className="px-10 py-3.5 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-gray-900 transition-all shadow-2xl shadow-blue-200 uppercase tracking-widest flex items-center gap-3 active:scale-95"
+                >
+                  <i className="ri-upload-2-fill text-lg"></i> EXECUTE UPLOAD
+                </button>
               </div>
-
-              {/* Option 2: Paste URL - Auto downloads */}
-              <div className="mb-3">
-                <label className="block text-xs text-gray-500 mb-1">Or paste PDF URL (auto-downloads):</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm pr-10"
-                    value={pdfUrlInput}
-                    onChange={(e) => handlePdfUrlChange(e.target.value)}
-                    placeholder="Paste PDF URL here - will auto-download"
-                    disabled={uploadingPdf || downloadingPdf}
-                  />
-                  {downloadingPdf && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
-                    </div>
-                  )}
-                </div>
-                {downloadingPdf && (
-                  <p className="text-xs text-blue-600 mt-1">Downloading and saving PDF...</p>
-                )}
-              </div>
-
-              {/* Show saved PDF path */}
-              {editingDocument.document.pdfUrl && (
-                <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-sm text-green-700 truncate">
-                    Saved: {editingDocument.document.pdfUrl}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Thumbnail URL (Optional)
-              </label>
-              <input
-                type="text"
-                className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                value={editingDocument.document.thumbnail || ''}
-                onChange={(e) => setEditingDocument({
-                  ...editingDocument,
-                  document: { ...editingDocument.document, thumbnail: e.target.value }
-                })}
-                placeholder="https://example.com/thumbnail.png"
-              />
-            </div>
-            <div className="md:col-span-2 flex gap-3">
-              <button
-                onClick={handleSaveDocument}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Save Document
-              </button>
-              <button
-                onClick={() => {
-                  setShowDocumentForm(false);
-                  setEditingDocument(null);
-                  setError('');
-                }}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
-              >
-                Cancel
-              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Save Button */}
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={handleSave}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Save All Changes
-        </button>
-      </div>
     </div>
   );
 }
