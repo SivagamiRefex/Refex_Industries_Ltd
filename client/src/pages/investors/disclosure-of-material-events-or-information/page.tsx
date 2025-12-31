@@ -40,6 +40,7 @@ interface PageContent {
   title: string;
   hasYearFilter: boolean;
   filterItems?: string[];
+  showPublishDate?: boolean;
   sections?: Array<{
     title: string;
     documents: Document[];
@@ -71,9 +72,11 @@ const DisclosurePage = () => {
       if (data && data.isActive) {
         // Handle both camelCase and snake_case from API response
         const filterItems = (data.filterItems || (data as any).filter_items || []);
+        const showPublishDate = data.showPublishDate !== undefined ? data.showPublishDate : (data as any).show_publish_date;
         const pageData = {
           ...data,
           filterItems: filterItems,
+          showPublishDate: showPublishDate !== undefined ? !!showPublishDate : false,
         };
         setPageContent(pageData);
         // Set default year to the most recent year if available
@@ -293,7 +296,7 @@ const DisclosurePage = () => {
                                 >
                                   {doc.title}
                                 </p>
-                                {doc.date && (
+                                {pageContent.showPublishDate && doc.date && (
                                   <p 
                                     style={{ color: '#484848', fontSize: '16px' }}
                                   >
