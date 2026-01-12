@@ -445,7 +445,7 @@ export default function Header() {
           {/* Desktop Navigation - Centered */}
         
 
-          <div className="hidden lg:flex items-center">
+          <div className="hidden lg:flex items-center" style={{ marginTop: '55px' }}>
   <a
     href={contactButtonHref}
     className="

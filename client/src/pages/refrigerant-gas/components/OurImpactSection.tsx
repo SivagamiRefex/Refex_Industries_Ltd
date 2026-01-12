@@ -224,7 +224,7 @@ export default function OurImpactSection() {
                       />
                     </div>
                   )}
-                  <h3 className="font-bold mb-3 text-center" style={{ fontSize: '26px', color: '#000000' }}>
+                  <h3 className="font-bold mb-3 text-center whitespace-nowrap overflow-hidden text-ellipsis" style={{ fontSize: '26px', color: '#000000' }}>
                     {impact.title}
                   </h3>
                   {impact.description && (

@@ -72,7 +72,7 @@ export default function AboutSection() {
             <h2 className="text-[35px] font-semibold text-gray-800 uppercase tracking-wider mb-6">
               {section.title}
             </h2>
-            <p className="text-gray-600 text-base leading-relaxed max-w-4xl">
+            <p className="text-gray-600 text-base leading-relaxed ">
               {section.content}
             </p>
           </div>

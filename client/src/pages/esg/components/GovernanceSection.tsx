@@ -160,14 +160,13 @@ export default function GovernanceSection() {
           {items.map((item) => (
             <div key={item.id} className="bg-white p-8 text-center">
               <h4 className="text-xl font-bold text-gray-900 mb-6">{item.title}</h4>
+              
               <a
                 href={getFullUrl(item.link)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center font-semibold transition-colors cursor-pointer border-2 rounded-full hover:bg-[#7dc144] hover:text-white"
+                className="inline-flex items-center justify-center font-semibold transition-colors cursor-pointer border-2 rounded-full text-[#7dc144] border-[#7dc144] hover:bg-[#7dc144] hover:text-white"
                 style={{ 
-                  color: '#7dc144', 
-                  borderColor: '#7dc144',
                   padding: '5px 10px'
                 }}
               >

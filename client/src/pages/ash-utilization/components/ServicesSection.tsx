@@ -115,7 +115,7 @@ function ServicesSection() {
             className="mb-4"
             data-aos="fade-right"
           >
-            SERVICES
+            OUR SERVICES
           </h2>
         </div>
 
@@ -146,21 +146,21 @@ function ServicesSection() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
             {currentService.imagePosition === 'left' ? (
               <>
                 <div 
-                  className="order-1"
+                  className="order-1 flex"
                   data-aos="fade-right"
                   data-aos-duration="800"
                   key={`image-${activeTab}`}
                 >
                   {currentService.image && (
-                    <div className="rounded-lg overflow-hidden shadow-lg">
+                    <div className="rounded-lg overflow-hidden shadow-lg w-full h-full">
                       <img
                         src={currentService.image}
                         alt={currentService.title}
-                        className="w-full h-[500px] object-cover"
+                        className="w-full h-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x500?text=No+Image';
                         }}
@@ -238,17 +238,17 @@ function ServicesSection() {
                   </div>
                 </div>
                 <div 
-                  className="order-2"
+                  className="order-2 flex"
                   data-aos="fade-left"
                   data-aos-duration="800"
                   key={`image-${activeTab}`}
                 >
                   {currentService.image && (
-                    <div className="rounded-lg overflow-hidden shadow-lg">
+                    <div className="rounded-lg overflow-hidden shadow-lg w-full h-full">
                       <img
                         src={currentService.image}
                         alt={currentService.title}
-                        className="w-full h-[500px] object-cover"
+                        className="w-full h-full object-cover"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x500?text=No+Image';
                         }}

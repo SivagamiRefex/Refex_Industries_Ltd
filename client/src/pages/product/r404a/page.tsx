@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../../home/components/Header';
 import Footer from '../../home/components/Footer';
 import ScrollToTop from '../../home/components/ScrollToTop';
@@ -7,6 +7,10 @@ import ScrollToTop from '../../home/components/ScrollToTop';
 export default function R404AProductPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const productImages = [
     'https://refex.co.in/wp-content/uploads/2024/12/404a-img.jpg',

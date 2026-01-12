@@ -87,7 +87,7 @@ Venwind Refex is advancing India's clean energy transition through sustainable w
   return (
     <section className="py-20" style={{ backgroundColor: '#f3f3f3' }}>
       <div className="container mx-auto px-4 max-w-7xl">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid md:grid-cols-2  items-center">
           <div>
             <h2 
               className="text-[34px] font-semibold mb-6" 

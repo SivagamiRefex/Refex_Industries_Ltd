@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '../../home/components/Header';
 import Footer from '../../home/components/Footer';
@@ -6,6 +6,10 @@ import Footer from '../../home/components/Footer';
 const HFC134APage = () => {
   const [mainImage, setMainImage] = useState('https://refex.co.in/wp-content/uploads/2024/12/HFC.jpg');
   const [activeAccordion, setActiveAccordion] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const thumbnails = [
     'https://refex.co.in/wp-content/uploads/2024/12/HFC.jpg',

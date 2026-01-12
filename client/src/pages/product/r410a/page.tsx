@@ -1,11 +1,15 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../../home/components/Header';
 import Footer from '../../home/components/Footer';
 
 export default function R410APage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [openAccordion, setOpenAccordion] = useState<string | null>(null);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const images = [
     'https://refex.co.in/wp-content/uploads/2024/01/410a-img.jpg',

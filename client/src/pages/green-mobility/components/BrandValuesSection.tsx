@@ -92,7 +92,7 @@ function BrandValuesSection() {
           {values.map((value, index) => (
             <div key={value.id} className={`flex flex-col items-center ${index < values.length - 1 ? 'pr-8 md:pr-16 border-r border-gray-300' : ''}`}>
               {value.icon && (
-                <div className="flex items-center justify-center mb-4 bg-[#FF6B35] rounded-lg p-4" style={{ width: '160px', height: '160px' }}>
+                <div className="flex items-center justify-center mb-4  rounded-lg p-4" style={{ width: '160px', height: '160px' }}>
                   <img
                     src={value.icon}
                     alt={value.title}

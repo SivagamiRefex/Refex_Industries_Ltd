@@ -292,21 +292,23 @@ export default function CollaborationSection() {
                 
                 <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto">
                   {orgs.map((org) => (
-                    <div key={org.id} className="bg-gray-50 p-8 rounded-lg text-center">
-                      <h5 className="font-bold mb-4" style={{ fontSize: '22px', color: '#000000' }}>{org.title}</h5>
+                    <div key={org.id} className="bg-gray-50 p-8 rounded-lg flex flex-col">
+                      <h5 className="font-bold mb-6 text-center" style={{ fontSize: '22px', color: '#000000' }}>{org.title}</h5>
                       {org.logo && (
-                        <img
-                          src={getFullUrl(org.logo)}
-                          alt={org.title}
-                          className="w-full max-w-xs mb-6 mx-auto"
-                          onError={(e) => {
-                            // Hide broken images instead of requesting external placeholder
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
+                        <div className="flex justify-center mb-6">
+                          <img
+                            src={getFullUrl(org.logo)}
+                            alt={org.title}
+                            className="max-w-xs w-full h-auto object-contain"
+                            onError={(e) => {
+                              // Hide broken images instead of requesting external placeholder
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
                       )}
                       {org.content && (
-                        <p className="leading-relaxed" style={{ fontSize: '16px', color: '#1f1f1f' }}>{org.content}</p>
+                        <p className="leading-relaxed text-center flex-1" style={{ fontSize: '16px', color: '#1f1f1f' }}>{org.content}</p>
                       )}
                     </div>
                   ))}

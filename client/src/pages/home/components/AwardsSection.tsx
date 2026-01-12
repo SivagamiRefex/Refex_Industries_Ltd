@@ -122,15 +122,22 @@ export default function AwardsSection() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Navigate to next slide
+  // Navigate to next slide (move by 3 items)
   const goToNext = useCallback(() => {
     if (isTransitioning || awards.length === 0) return;
     setIsTransitioning(true);
-    const isLastItem = currentIndex === awards.length - 1;
+    const itemsPerView = 3;
+    const maxIndex = Math.max(0, awards.length - itemsPerView);
+    const isLastGroup = currentIndex >= maxIndex;
     // Extra time when looping from last to first
-    const duration = isLastItem ? 1000 : 500;
+    const duration = isLastGroup ? 1000 : 500;
     setTransitionDuration(duration);
-    setCurrentIndex((prev) => (prev + 1) % awards.length);
+    setCurrentIndex((prev) => {
+      if (prev >= maxIndex) {
+        return 0; // Loop back to start
+      }
+      return Math.min(prev + itemsPerView, maxIndex);
+    });
     setTimeout(() => setIsTransitioning(false), duration);
   }, [isTransitioning, awards.length, currentIndex]);
 
@@ -176,26 +183,18 @@ export default function AwardsSection() {
     }, 4000);
   };
 
-  // Create extended array for infinite loop effect (3x the items)
-  const getExtendedAwards = () => {
-    if (awards.length === 0) return [];
-    return [...awards, ...awards, ...awards];
-  };
-
-  // Calculate the offset to place active item at the start (left)
+  // Calculate the offset to show 3 items per row
   const getTransformOffset = () => {
     if (awards.length === 0) return 0;
     const gap = 32; // gap between items (gap-8 = 2rem = 32px)
     const totalItemWidth = itemWidth + gap;
     
-    // Add offset for the middle set of items (since we have 3 sets)
-    const middleSetOffset = awards.length * totalItemWidth;
-    
-    // Calculate the position to place current item at the start
-    const translateX = -(currentIndex * totalItemWidth) - middleSetOffset;
+    // Calculate the position to show currentIndex and next 2 items (3 total)
+    const translateX = -(currentIndex * totalItemWidth);
     
     return translateX;
   };
+
 
   if (loading) {
     return (
@@ -216,7 +215,8 @@ export default function AwardsSection() {
     return null;
   }
 
-  const extendedAwards = getExtendedAwards();
+  const itemsPerView = 3;
+  const totalGroups = Math.ceil(awards.length / itemsPerView);
 
   return (
     <section className="py-12 lg:py-16 bg-[#f7f7f7] overflow-hidden">
@@ -236,62 +236,70 @@ export default function AwardsSection() {
           onMouseLeave={handleMouseLeave}
         >
           {/* Slider Container */}
-          <div className="overflow-hidden">
+          <div 
+            className="overflow-hidden mx-auto"
+            style={{ 
+              width: `${3 * (itemWidth + 32) - 32}px`, // Width for exactly 3 items (3 items + 2 gaps)
+              maxWidth: '100%',
+            }}
+          >
             <div 
               className="flex gap-8 ease-out"
               style={{ 
                 transform: `translateX(${getTransformOffset()}px)`,
                 transition: `transform ${transitionDuration}ms ease-out`,
+                width: `${awards.length * (itemWidth + 32)}px`, // Total width for all items
               }}
             >
-              {extendedAwards.map((award, index) => {
-                const actualIndex = index % awards.length;
-                
-                return (
-                  <div
-                    key={`${award.id}-${index}`}
-                    className="flex-shrink-0 transition-all duration-500 group cursor-pointer"
-                    style={{ 
-                      width: `${itemWidth}px`,
-                    }}
-                    onClick={() => goToSlide(actualIndex)}
-                  >
-                    <div className="h-full flex flex-col items-center text-center">
-                      <div className="mb-6 h-48 flex items-center justify-center relative overflow-hidden rounded-lg">
-                        <img
-                          src={award.image}
-                          alt={award.title}
-                          className="max-h-full max-w-full object-contain transition-transform duration-500"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=No+Image';
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-lg"></div>
-                      </div>
-                      <p className="text-gray-700 text-sm leading-relaxed group-hover:text-[#2a608d] transition-colors">
-                        {award.title}
-                      </p>
+              {awards.map((award, index) => (
+                <div
+                  key={award.id}
+                  className="flex-shrink-0 transition-all duration-500 group cursor-pointer"
+                  style={{ 
+                    width: `${itemWidth}px`,
+                  }}
+                  onClick={() => goToSlide(index)}
+                >
+                  <div className="h-full flex flex-col items-center text-center">
+                    <div className="mb-6 h-48 flex items-center justify-center relative overflow-hidden rounded-lg">
+                      <img
+                        src={award.image}
+                        alt={award.title}
+                        className="max-h-full max-w-full object-contain transition-transform duration-500"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x200?text=No+Image';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 rounded-lg"></div>
                     </div>
+                    <p className="text-gray-700 text-sm leading-relaxed group-hover:text-[#2a608d] transition-colors">
+                      {award.title}
+                    </p>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Pagination Dots */}
+          {/* Pagination Dots - Show dots for groups of 3 */}
           <div className="flex justify-center gap-2 mt-8">
-            {awards.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-300 cursor-pointer ${
-                  index === currentIndex 
-                    ? 'bg-[#7dc144]' 
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
+            {Array.from({ length: totalGroups }).map((_, groupIndex) => {
+              const groupStartIndex = groupIndex * itemsPerView;
+              const isActive = currentIndex >= groupStartIndex && currentIndex < groupStartIndex + itemsPerView;
+              
+              return (
+                <button
+                  key={groupIndex}
+                  onClick={() => goToSlide(groupStartIndex)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 cursor-pointer ${
+                    isActive
+                      ? 'bg-[#7dc144]' 
+                      : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
+                  aria-label={`Go to group ${groupIndex + 1}`}
+                />
+              );
+            })}
           </div>
         </div>
       </div>

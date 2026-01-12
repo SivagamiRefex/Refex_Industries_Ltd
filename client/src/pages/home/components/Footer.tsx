@@ -242,7 +242,7 @@ export default function Footer() {
                   if (platformLower.includes('twitter') || platformLower.includes('x')) return 'bg-black';
                   if (platformLower.includes('youtube')) return 'bg-[#FF0000]';
                   if (platformLower.includes('linkedin')) return 'bg-[#0077B5]';
-                  if (platformLower.includes('instagram')) return 'bg-[#E4405F]';
+                  if (platformLower.includes('instagram')) return 'bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#FCB045]';
                   return 'bg-gray-800';
                 };
 

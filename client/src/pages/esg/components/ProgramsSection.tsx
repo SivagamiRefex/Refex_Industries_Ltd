@@ -179,7 +179,7 @@ export default function ProgramsSection() {
 
         {/* Horizontal Tabs - All in One Row with Rectangular Backgrounds */}
         <div className="mb-12 overflow-x-auto scrollbar-hide">
-          <div className="flex gap-[5px] w-full">
+          <div className="flex gap-[5px] w-full" style={{ minHeight: '54px' }}>
             {programs.map((program, index) => (
               <button
                 key={program.id || index}
@@ -192,7 +192,8 @@ export default function ProgramsSection() {
                 style={{ 
                   fontSize: '17px', 
                   color: activeTab === index ? 'white' : '#1f1f1f',
-                  padding: '12px'
+                  padding: '12px',
+                  minHeight: '50px'
                 }}
               >
                 {program.title}
@@ -204,19 +205,20 @@ export default function ProgramsSection() {
         {/* Content Area */}
         {programs[activeTab] && (
           <div className="bg-white">
-            <div className="grid grid-cols-1 md:grid-cols-2 items-start" style={{ gap: '10px' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 items-stretch" style={{ gap: '10px' }}>
               {/* Image on Left */}
-              <div className="w-full flex items-start">
-                <img
-                  src={getFullUrl(programs[activeTab].image)}
-                  alt={programs[activeTab].title}
-                  className="object-cover"
-                  style={{ width: '500px', height: '390px' }}
-                  onError={(e) => {
-                    // Hide broken images instead of requesting external placeholder
-                    (e.target as HTMLImageElement).style.display = 'none';
-                  }}
-                />
+              <div className="w-full flex h-full">
+                <div className="w-full h-full">
+                  <img
+                    src={getFullUrl(programs[activeTab].image)}
+                    alt={programs[activeTab].title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Hide broken images instead of requesting external placeholder
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Content on Right */}
