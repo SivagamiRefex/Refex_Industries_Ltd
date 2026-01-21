@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { greenMobilityCmsApi } from '../../../services/api';
+import scanQrCode from '../../../../public/Qr.png';
 
 interface Feature {
   icon: string;
@@ -324,7 +325,7 @@ export default function OurServicesSection() {
             {/* QR Code Image */}
             <div className="p-4">
               <img
-                src={modalImageUrl}
+                src={scanQrCode}
                 alt="Download App QR Code"
                 className="w-full h-auto rounded-lg"
                 onError={(e) => {
