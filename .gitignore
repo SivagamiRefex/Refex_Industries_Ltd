@@ -7,6 +7,9 @@ server/wp-content/
 .pnp
 .pnp.js
 
+# Database dumps / backups
+database/*.sql
+
 # Testing
 coverage/
 *.log
