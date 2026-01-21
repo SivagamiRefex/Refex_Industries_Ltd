@@ -953,6 +953,38 @@ export const stockApi = {
     method: 'POST',
     body: JSON.stringify({ stock_name: stockName }),
   }),
+
+  getHistoricalData: async (params: { page?: number; limit?: number; search?: string; startDate?: string; endDate?: string; exchange?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params.page) queryParams.append('page', params.page.toString());
+    if (params.limit) queryParams.append('limit', params.limit.toString());
+    if (params.search) queryParams.append('search', params.search);
+    if (params.startDate) queryParams.append('start_date', params.startDate);
+    if (params.endDate) queryParams.append('end_date', params.endDate);
+    if (params.exchange) queryParams.append('exchange', params.exchange);
+    
+    const queryString = queryParams.toString();
+    const url = `/api/historical${queryString ? `?${queryString}` : ''}`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}` as string);
+      }
+      
+      const data = await response.json();
+      return data; // Returns { success, exchange, data, pagination }
+    } catch (error: any) {
+      console.error('Error fetching historical data:', error);
+      throw error;
+    }
+  },
   // Fetch stock chart data from admin-ajax API via backend proxy (avoids CORS)
   getStockChartData: (params: { action: string; stock_name: string; start_date?: string; end_date?: string; nonce?: string }) => {
     const formData = new URLSearchParams();

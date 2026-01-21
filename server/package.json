@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "stock": "node stock.js",
+    "stockBse": "node stockBse.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:hero": "node scripts/seed_hero_slides.js",
     "seed:cap-hero": "node scripts/seed_capabilities_hero.js",
@@ -92,6 +94,7 @@
     "pdfkit": "^0.15.0",
     "puppeteer": "^22.15.0",
     "sequelize": "^6.37.3",
+    "stock-nse-india": "^1.3.0",
     "tough-cookie": "^6.0.0",
     "util": "^0.12.5",
     "xlsx": "^0.18.5"

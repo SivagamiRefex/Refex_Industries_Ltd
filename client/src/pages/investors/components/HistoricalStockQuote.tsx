@@ -12,6 +12,15 @@ interface StockRecord {
   trades: string;
 }
 
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalRecords: number;
+  limit: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
 interface HistoricalStockQuoteSettings {
   title: string;
   columnDate?: string;
@@ -34,12 +43,13 @@ interface HistoricalStockQuoteSettings {
 
 export default function HistoricalStockQuote() {
   const [settings, setSettings] = useState<HistoricalStockQuoteSettings | null>(null);
-  const [exchange, setExchange] = useState<'BSE' | 'NSE'>('BSE');
+  const [exchange, setExchange] = useState<'BSE' | 'NSE'>('NSE');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState<number | null>(1); // null means no filter selected
   const [stockData, setStockData] = useState<StockRecord[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const isFilterButtonChange = useRef(false); // Track if date change is from filter button
@@ -51,9 +61,8 @@ export default function HistoricalStockQuote() {
   useEffect(() => {
     if (settings) {
       initializeDates();
-      fetchHistoricalData();
     }
-  }, [settings, exchange]);
+  }, [settings]);
 
   useEffect(() => {
     if (settings && startDate && endDate) {
@@ -63,28 +72,15 @@ export default function HistoricalStockQuote() {
       }
       isFilterButtonChange.current = false; // Reset the flag
       
-      setCurrentPage(1); // Reset to page 1 when date range or exchange changes
       fetchHistoricalData();
     }
-  }, [startDate, endDate, exchange]);
-
-  // Reset current page if it exceeds total pages when data changes
-  useEffect(() => {
-    if (stockData.length > 0 && settings) {
-      const recordsPerPage = settings.recordsPerPage || 10;
-      const calculatedTotalPages = Math.ceil(stockData.length / recordsPerPage);
-      if (currentPage > calculatedTotalPages) {
-        setCurrentPage(1);
-      }
-    }
-  }, [stockData.length, settings, currentPage]);
+  }, [startDate, endDate, currentPage, exchange]);
 
   const loadSettings = async () => {
     try {
       const data = await investorsCmsApi.getHistoricalStockQuote();
       if (data && data.isActive) {
         setSettings(data);
-        setExchange((data.defaultExchange || 'BSE') as 'BSE' | 'NSE');
       } else {
         setSettings({
           title: 'Historical Stock Quote',
@@ -152,37 +148,48 @@ export default function HistoricalStockQuote() {
       setLoading(true);
       setError('');
 
-      const response = await stockApi.getStockChartData({
-        action: 'fetch_stock_data',
-        stock_name: exchange,
-        start_date: startDate,
-        end_date: endDate,
-        nonce: settings.nonce || '44efac5c14',
+      const recordsPerPage = settings.recordsPerPage || 10;
+      
+      // Use the server's /api/historical endpoint
+      const response = await stockApi.getHistoricalData({
+        page: currentPage,
+        limit: recordsPerPage,
+        startDate: startDate,
+        endDate: endDate,
+        exchange: exchange,
       });
 
-      if (response && response.data) {
-        let parsedData = parseApiResponse(response.data);
+      if (response && response.success && response.data) {
+        // Parse the API response data (response.data is the array of stock records)
+        const parsedData = parseApiResponse(response.data);
         
-        console.log('Raw parsed data count:', parsedData.length);
-        console.log('Filtering date range:', startDate, 'to', endDate);
-        
-        // Filter data by start and end date to ensure only data within the date range is shown
-        parsedData = filterDataByDateRange(parsedData, startDate, endDate);
-        
-        console.log('Filtered data count:', parsedData.length);
-        console.log('Sample filtered dates:', parsedData.slice(0, 3).map(r => r.date));
-        
+        // Server already filters by date, so we use the data directly
         setStockData(parsedData);
-        // Reset to first page when new data is loaded
-        setCurrentPage(1);
+        
+        // Set pagination info from server response
+        if (response.pagination) {
+          setPagination(response.pagination);
+        } else {
+          // If no pagination from server, create default
+          setPagination({
+            currentPage: currentPage,
+            totalPages: 1,
+            totalRecords: parsedData.length,
+            limit: recordsPerPage,
+            hasNextPage: false,
+            hasPrevPage: currentPage > 1
+          });
+        }
       } else {
-        setError('No data received from API');
+        setError(response?.message || 'No data received from API');
         setStockData([]);
+        setPagination(null);
       }
     } catch (err: any) {
       console.error('Failed to fetch historical stock data:', err);
       setError(err.message || 'Failed to fetch historical stock data');
       setStockData([]);
+      setPagination(null);
     } finally {
       setLoading(false);
     }
@@ -215,19 +222,36 @@ export default function HistoricalStockQuote() {
         return '0';
       };
 
+      // Format trade value with proper formatting
+      const formatTradeValue = (value: any): string => {
+        if (value === undefined || value === null || value === '') return '0';
+        const numValue = parseFloat(String(value));
+        if (isNaN(numValue)) return '0';
+        // Format with commas and 2 decimal places
+        return numValue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      };
+
+      // Format volume with proper formatting
+      const formatVolume = (value: any): string => {
+        if (value === undefined || value === null || value === '') return '0';
+        const numValue = parseInt(String(value));
+        if (isNaN(numValue)) return '0';
+        return numValue.toLocaleString('en-IN');
+      };
+
       records.push({
         date: item.date || item.Date || item.DATE || item.timestamp || '',
-        open: String(item.open || item.Open || item.OPEN || item.opening || '0'),
-        high: String(item.high || item.High || item.HIGH || item.high_price || '0'),
-        low: String(item.low || item.Low || item.LOW || item.low_price || '0'),
-        close: String(item.close || item.Close || item.CLOSE || item.closing || item.price || '0'),
-        volume: String(item.volume || item.Volume || item.VOLUME || item.traded_volume || '0'),
-        tradeValue: getFieldValue(['value', 'Value', 'VALUE', 'tradeValue', 'trade_value', 'TradeValue', 'trade_value_amount', 'tradeValueAmount']),
-        trades: String(item.trades || item.Trades || item.no_of_trades || item.number_of_trades || '0'),
+        open: String(parseFloat(item.open || item.Open || item.OPEN || item.opening || '0').toFixed(2)),
+        high: String(parseFloat(item.high || item.High || item.HIGH || item.high_price || '0').toFixed(2)),
+        low: String(parseFloat(item.low || item.Low || item.LOW || item.low_price || '0').toFixed(2)),
+        close: String(parseFloat(item.close || item.Close || item.CLOSE || item.closing || item.price || '0').toFixed(2)),
+        volume: formatVolume(item.volume || item.Volume || item.VOLUME || item.traded_volume),
+        tradeValue: formatTradeValue(getFieldValue(['tradeValue', 'value', 'Value', 'VALUE', 'trade_value', 'TradeValue', 'trade_value_amount', 'tradeValueAmount'])),
+        trades: formatVolume(item.noOfTrades || item.trades || item.Trades || item.no_of_trades || item.number_of_trades || item.totalTrades),
       });
     });
 
-    // Log sample record to debug trade value parsing
+    // Log sample record to debug
     if (records.length > 0) {
       console.log('Sample parsed record:', {
         date: records[0].date,
@@ -246,81 +270,13 @@ export default function HistoricalStockQuote() {
     return records;
   };
 
-  // Filter records by date range to ensure only data within the selected dates is shown
-  const filterDataByDateRange = (records: StockRecord[], startDateStr: string, endDateStr: string): StockRecord[] => {
-    if (!startDateStr || !endDateStr) {
-      return records;
-    }
-
-    const startDate = new Date(startDateStr);
-    const endDate = new Date(endDateStr);
-    
-    // Validate dates
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-      console.error('Invalid date range:', startDateStr, endDateStr);
-      return records;
-    }
-    
-    // Set time to start and end of day for accurate comparison
-    startDate.setHours(0, 0, 0, 0);
-    endDate.setHours(23, 59, 59, 999);
-
-    const filtered = records.filter((record) => {
-      if (!record.date || record.date.trim() === '') return false;
-      
-      // Parse the record date - handle different date formats
-      let recordDate: Date | null = null;
-      
-      try {
-        // Try different date formats
-        const dateStr = record.date.trim();
-        
-        // Try ISO format first (YYYY-MM-DD)
-        if (dateStr.match(/^\d{4}-\d{2}-\d{2}/)) {
-          recordDate = new Date(dateStr);
-        }
-        // Try DD/MM/YYYY format
-        else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}/)) {
-          const [day, month, year] = dateStr.split('/');
-          recordDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        }
-        // Try DD-MM-YYYY format
-        else if (dateStr.match(/^\d{2}-\d{2}-\d{4}/)) {
-          const [day, month, year] = dateStr.split('-');
-          recordDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        }
-        // Try parsing as-is
-        else {
-          recordDate = new Date(dateStr);
-        }
-        
-        // Validate parsed date
-        if (!recordDate || isNaN(recordDate.getTime())) {
-          return false;
-        }
-        
-        // Set time to start of day for comparison
-        recordDate.setHours(0, 0, 0, 0);
-        
-        // Check if date is within range (inclusive)
-        const isInRange = recordDate >= startDate && recordDate <= endDate;
-        
-        return isInRange;
-      } catch (error) {
-        console.error('Error parsing date:', record.date, error);
-        return false;
-      }
-    });
-
-    return filtered;
-  };
-
   const handleQuickFilter = (months: number) => {
     isFilterButtonChange.current = true; // Mark that this change is from filter button
     const end = new Date();
     const start = new Date();
     start.setMonth(start.getMonth() - months);
     
+    setCurrentPage(1); // Reset to first page when filter changes
     setEndDate(end.toISOString().split('T')[0]);
     setStartDate(start.toISOString().split('T')[0]);
     setActiveFilter(months);
@@ -328,12 +284,14 @@ export default function HistoricalStockQuote() {
 
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     isFilterButtonChange.current = false; // Mark as manual change
+    setCurrentPage(1); // Reset to first page
     setStartDate(e.target.value);
     setActiveFilter(null); // Clear filter selection
   };
 
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     isFilterButtonChange.current = false; // Mark as manual change
+    setCurrentPage(1); // Reset to first page
     setEndDate(e.target.value);
     setActiveFilter(null); // Clear filter selection
   };
@@ -343,10 +301,12 @@ export default function HistoricalStockQuote() {
   };
 
   const recordsPerPage = settings?.recordsPerPage || 10;
-  const totalPages = Math.ceil(stockData.length / recordsPerPage);
-  const startIndex = (currentPage - 1) * recordsPerPage;
-  const endIndex = startIndex + recordsPerPage;
-  const currentRecords = stockData.slice(startIndex, endIndex);
+  // Use server pagination if available, otherwise calculate from local data
+  const totalPages = pagination?.totalPages || Math.ceil(stockData.length / recordsPerPage);
+  const totalRecords = pagination?.totalRecords || stockData.length;
+  
+  // Since server handles pagination, we display all records returned
+  const currentRecords = stockData;
 
   // Calculate maximum pages to show based on active filter
   const getMaxPagesToShow = () => {
@@ -427,11 +387,14 @@ export default function HistoricalStockQuote() {
               <label className="text-sm font-medium text-gray-700 mb-2">Exchange</label>
               <select
                 value={exchange}
-                onChange={(e) => setExchange(e.target.value as 'BSE' | 'NSE')}
-                className="px-4 py-2 border border-gray-300 rounded-md cursor-pointer"
+                onChange={(e) => {
+                  setExchange(e.target.value as 'BSE' | 'NSE');
+                  setCurrentPage(1); // Reset to first page when exchange changes
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md cursor-pointer bg-white"
               >
-                <option value="BSE">BSE</option>
                 <option value="NSE">NSE</option>
+                <option value="BSE">BSE</option>
               </select>
             </div>
 
@@ -516,8 +479,8 @@ export default function HistoricalStockQuote() {
 
           <div className="mb-4 text-sm text-gray-600">
             <p>Exchange : {exchange} | Period : {startDate} to {endDate}</p>
-            {stockData.length > 0 && (
-              <p className="mt-1">Total Records: {stockData.length}</p>
+            {totalRecords > 0 && (
+              <p className="mt-1">Total Records: {totalRecords} | Page {currentPage} of {totalPages}</p>
             )}
           </div>
 
