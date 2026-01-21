@@ -93,10 +93,10 @@ function OurPresenceSection() {
           {presence.mapImage && (
             <div className="flex-shrink-0">
               <img 
-                src={"https://refex.co.in/wp-content/uploads/2025/06/mobile-map02.jpg"} 
+                src={"https://uat.refex.co.in/uploads/images/image-1768989574986-172947697.png"} 
                 alt="India Map"
                 className="h-auto rounded-lg"
-                style={{ maxWidth: '100%' }}
+                style={{ maxWidth: '100%',    height: '550px' }}
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x600?text=Map+Image';
                 }}
