@@ -34,6 +34,8 @@ export default function OurServicesSection() {
   const [activeTab, setActiveTab] = useState(0);
   const [services, setServices] = useState<OurService[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [modalImageUrl, setModalImageUrl] = useState<string>('');
 
   useEffect(() => {
     loadServices();
@@ -159,7 +161,7 @@ export default function OurServicesSection() {
               key={service.id}
               className={`${activeTab === index ? 'block' : 'hidden'}`}
             >
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div className={`grid grid-cols-1 lg:grid-cols-2 gap-12 ${index === 1 ? 'items-start' : 'items-center'}`}>
                 {/* Image */}
                 <div className={index === 1 ? 'order-2 lg:order-2' : 'order-2 lg:order-1'}>
                   {service.image ? (
@@ -179,7 +181,7 @@ export default function OurServicesSection() {
                 </div>
 
                 {/* Content */}
-                <div className={index === 1 ? 'order-1 lg:order-1' : 'order-1 lg:order-2'}>
+                <div className={`${index === 1 ? 'order-1 lg:order-1' : 'order-1 lg:order-2'} flex flex-col justify-start px-6 py-8 lg:px-8 lg:py-12`}>
                   <div className="space-y-6">
                     {service.description && (
                       <p className="leading-relaxed" style={{ fontSize: '16px', color: '#484848' }}>
@@ -256,19 +258,40 @@ export default function OurServicesSection() {
                     {/* Buttons for Airport Transfers */}
                     {service.buttonsJson && service.buttonsJson.length > 0 && (
                       <div className="flex flex-wrap gap-4 mt-8">
-                        {service.buttonsJson.map((button, idx) => (
-                          <a
-                            key={idx}
-                            href={button.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="group inline-flex items-center gap-2 px-8 py-4 text-white font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer"
-                            style={{ backgroundColor: '#7dc144', borderRadius: '5px' }}
-                          >
-                            {button.text}
-                            <i className="ri-arrow-right-line transition-transform duration-300 group-hover:translate-x-1"></i>
-                          </a>
-                        ))}
+                        {service.buttonsJson.map((button, idx) => {
+                          const isDownloadApp = button.text.toLowerCase().includes('download app');
+                          
+                          if (isDownloadApp) {
+                            return (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setModalImageUrl(button.link);
+                                  setShowModal(true);
+                                }}
+                                className="group inline-flex items-center gap-2 px-8 py-4 text-white font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer"
+                                style={{ backgroundColor: '#7dc144', borderRadius: '5px' }}
+                              >
+                                {button.text}
+                                <i className="ri-arrow-right-line transition-transform duration-300 group-hover:translate-x-1"></i>
+                              </button>
+                            );
+                          }
+                          
+                          return (
+                            <a
+                              key={idx}
+                              href={button.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group inline-flex items-center gap-2 px-8 py-4 text-white font-semibold transition-all duration-300 whitespace-nowrap cursor-pointer"
+                              style={{ backgroundColor: '#7dc144', borderRadius: '5px' }}
+                            >
+                              {button.text}
+                              <i className="ri-arrow-right-line transition-transform duration-300 group-hover:translate-x-1"></i>
+                            </a>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -278,6 +301,40 @@ export default function OurServicesSection() {
           ))}
         </div>
       </div>
+
+      {/* QR Code Modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10 bg-white rounded-full p-2 shadow-lg"
+              aria-label="Close modal"
+            >
+              <i className="ri-close-line text-2xl"></i>
+            </button>
+            
+            {/* QR Code Image */}
+            <div className="p-4">
+              <img
+                src={modalImageUrl}
+                alt="Download App QR Code"
+                className="w-full h-auto rounded-lg"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800x400?text=Image+Not+Found';
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
