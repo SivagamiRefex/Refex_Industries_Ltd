@@ -212,6 +212,120 @@ app.get('/api/historical', (req, res) => {
   }
 });
 
+app.get('/api/refexrenew-historical', (req, res) => {
+  try {
+     console.log('req.query', req.query);
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 50;
+      const search = req.query.search || '';
+      const startDate = req.query.start_date || '';
+      const endDate = req.query.end_date || '';
+      const exchange = (req.query.exchange || 'NSE').toUpperCase();
+      
+      // Select data file based on exchange
+      let dataFile = 'refexrenew_bse_data.json'; // Default NSE data
+      // if (exchange === 'BSE') {
+      //     dataFile = 'refexrenew_bse_data.json';
+      // }
+      
+      // Read JSON file
+      let allData = [];
+      try {
+          const fileData = fs.readFileSync(dataFile, 'utf8');
+          allData = JSON.parse(fileData);
+      } catch (fileError) {
+          // If BSE file doesn't exist, try to read from Excel downloads
+          if (exchange === 'BSE') {
+              try {
+                  const readExcelFile = require('./readExcel');
+                  const excelData = readExcelFile();
+                  if (excelData && excelData.length > 0) {
+                      // Transform Excel data to match our format
+                      allData = excelData.map(item => ({
+                          date: item.Date || item.date || '',
+                          open: item.Open || item['Open Price'] || item.open || 0,
+                          high: item.High || item['High Price'] || item.high || 0,
+                          low: item.Low || item['Low Price'] || item.low || 0,
+                          close: item.Close || item['Close Price'] || item.close || 0,
+                          volume: item.Volume || item['No. of Shares'] || item.volume || 0,
+                          tradeValue: item['Turnover (Rs.)'] || item.tradeValue || item.Turnover || 0,
+                          noOfTrades: item['No. of Trades'] || item.noOfTrades || item.Trades || 0,
+                          exchange: 'BSE'
+                      }));
+                  }
+              } catch (excelError) {
+                  console.error('Error reading BSE Excel data:', excelError.message);
+              }
+          }
+          
+          if (allData.length === 0) {
+              return res.status(404).json({ 
+                  success: false, 
+                  error: 'No data available for ${exchange}',
+                  message: '${exchange} data file not found. Please ensure ${dataFile} exists.'
+              });
+          }
+      }
+      
+      // Add exchange info to each record
+      allData = allData.map(item => ({ ...item, exchange: exchange }));
+      
+      // Filter by date range if provided
+      if (startDate && endDate) {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          start.setHours(0, 0, 0, 0);
+          end.setHours(23, 59, 59, 999);
+          
+          allData = allData.filter(item => {
+              if (!item.date) return false;
+              const itemDate = new Date(item.date);
+              return itemDate >= start && itemDate <= end;
+          });
+      }
+      
+      // Filter by search term if provided
+      if (search) {
+          const searchLower = search.toLowerCase();
+          allData = allData.filter(item => {
+              const date = (item.date || item.timestamp || '').toLowerCase();
+              const symbol = (item.symbol || '').toLowerCase();
+              return date.includes(searchLower) || symbol.includes(searchLower);
+          });
+      }
+      
+      // Sort by date descending (newest first)
+      allData.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Calculate pagination
+      const totalRecords = allData.length;
+      const totalPages = Math.ceil(totalRecords / limit);
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedData = allData.slice(startIndex, endIndex);
+      
+      res.json({
+          success: true,
+          exchange: exchange,
+          data: paginatedData,
+          pagination: {
+              currentPage: page,
+              totalPages: totalPages,
+              totalRecords: totalRecords,
+              limit: limit,
+              hasNextPage: page < totalPages,
+              hasPrevPage: page > 1
+          }
+      });
+  } catch (error) {
+      res.status(500).json({ 
+          success: false, 
+          error: error.message,
+          message: 'Data file not found. Please run: npm start'
+      });
+  }
+});
+
 
 
 app.get('/nse/quote', async (req, res) => {

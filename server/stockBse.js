@@ -2,7 +2,7 @@ const axios = require('axios');
 const fs = require('fs');
 
 // BSE Scrip Code for REFEX Industries
-const BSE_SCRIP_CODE = '532884';
+const BSE_SCRIP_CODE = '531260';
 
 // Function to convert date to YYYY-MM-DD format
 function formatDate(date) {
