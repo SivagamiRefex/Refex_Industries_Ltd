@@ -66,6 +66,10 @@ export default function AnnualReturnPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Annual Return - Refex Industries';
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {

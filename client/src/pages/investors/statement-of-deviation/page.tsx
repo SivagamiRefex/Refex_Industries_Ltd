@@ -60,6 +60,10 @@ export default function StatementOfDeviationPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Statement of Deviation – Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

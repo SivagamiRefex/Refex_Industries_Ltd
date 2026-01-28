@@ -57,6 +57,10 @@ const EmployeeStockOptionSchemePage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Employee Stock Option Scheme – Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

@@ -60,6 +60,10 @@ const BookClosurePage = () => {
   const [selectedYear, setSelectedYear] = useState<string>('');
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Book Closure of Members Register / Record Date - Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

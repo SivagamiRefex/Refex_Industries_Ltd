@@ -39,6 +39,10 @@ export default function RegistrarTransferAgentPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Registrar & Transfer Agent – Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

@@ -57,6 +57,10 @@ const DisclosuresUnderSASTRegulations2011Page = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Disclosures under SAST Regulations 2011 – Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

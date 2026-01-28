@@ -67,6 +67,10 @@ const UnpaidDividendListPage = () => {
   const [selectedYear, setSelectedYear] = useState<string>('');
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Unpaid Dividend List and IEPF Shares – Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

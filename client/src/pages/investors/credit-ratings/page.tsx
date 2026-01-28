@@ -61,6 +61,10 @@ const CreditRatingsPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     loadPageContent();
   }, []);
 

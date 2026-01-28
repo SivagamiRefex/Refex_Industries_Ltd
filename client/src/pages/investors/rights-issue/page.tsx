@@ -50,6 +50,10 @@ const RightsIssuePage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Rights Issue – Refex Industries Ltd.';
     loadPageContent();
   }, []);

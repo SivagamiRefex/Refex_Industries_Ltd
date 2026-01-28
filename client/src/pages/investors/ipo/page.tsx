@@ -44,6 +44,10 @@ export default function IPOPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'IPO - Refex Industries Ltd.';
 
     // Set meta description

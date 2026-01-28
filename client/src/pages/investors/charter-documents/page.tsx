@@ -55,6 +55,10 @@ export default function CharterDocumentsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Charter Documents – Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

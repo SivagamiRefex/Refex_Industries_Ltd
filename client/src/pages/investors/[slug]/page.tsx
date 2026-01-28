@@ -70,6 +70,10 @@ export default function InvestorDynamicPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     if (slug) {
       loadPageContent();
     }

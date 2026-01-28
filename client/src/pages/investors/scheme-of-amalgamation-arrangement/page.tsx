@@ -61,6 +61,10 @@ export default function SchemeOfAmalgamationArrangementPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Scheme of Amalgamation / Arrangement – Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

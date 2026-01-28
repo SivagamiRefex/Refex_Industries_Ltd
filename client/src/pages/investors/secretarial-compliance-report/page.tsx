@@ -65,6 +65,10 @@ const SecretarialComplianceReportPage = () => {
   const [selectedYear, setSelectedYear] = useState<string>('');
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Secretarial Compliance Report - Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');

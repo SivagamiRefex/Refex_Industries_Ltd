@@ -60,6 +60,10 @@ export default function MonitoringAgencyReportPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  useEffect(() => {
     document.title = 'Monitoring Agency Report – Refex Industries Ltd.';
     
     const metaDescription = document.querySelector('meta[name="description"]');
