@@ -409,6 +409,7 @@ const GeneralMeetingUpdatesPage = () => {
                         <li key={index}>
                           <Link
                             to={link.href}
+                            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                             className={`block w-72 px-6 py-3 text-base transition-colors cursor-pointer
                          ${isActive
                                 ? 'text-[#61CE70] font-medium'

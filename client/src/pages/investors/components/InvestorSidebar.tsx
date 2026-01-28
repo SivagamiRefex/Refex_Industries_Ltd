@@ -97,6 +97,7 @@ export default function InvestorSidebar({ currentPath }: InvestorSidebarProps) {
               <Link
                 key={link.id || link.name}
                 to={linkPath}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                 className={`block w-72 px-4 py-3 text-base transition-colors cursor-pointer  ${
                   isActive
                     ? 'bg-white text-[#61CE70]'

@@ -44,6 +44,10 @@ const investorLinks = [
 ];*/
 
 export default function Sidebar({ activePage }: SidebarProps) {
+  const handleLinkClick = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="lg:col-span-4">
       <div className="bg-white shadow-sm p-6 sticky top-24">
@@ -52,6 +56,7 @@ export default function Sidebar({ activePage }: SidebarProps) {
             <a
               key={index}
               href={link.href}
+              onClick={handleLinkClick}
               className={`block  w-72 px-4 py-3 text-base transition-colors cursor-pointer border-b-2 ${
                 activePage === link.slug
                   ? 'bg-gray-50 text-[#61ce70] border-[#61CE70]'
