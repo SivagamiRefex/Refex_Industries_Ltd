@@ -552,7 +552,7 @@ app.use("/uploads", express.static(uploadsPath));
 app.use(express.static(uploadsPath));
 
 // Serve WordPress content files (wp-content/uploads)
-app.use('/wp-content', express.static(path.join(__dirname, 'wp-content')));
+// app.use('/wp-content', express.static(path.join(__dirname, 'wp-content')));
 
 // Download PDF from URL and save to server (with optional subfolder)
 app.post('/api/download-pdf-from-url/:subfolder?', async (req, res) => {
