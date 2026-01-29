@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { aboutCmsApi } from '../../../services/api';
+import mapImage from '../../../../public/map.png';
 
 interface AboutPresence {
   id?: number;
@@ -93,7 +94,7 @@ function OurPresenceSection() {
           {presence.mapImage && (
             <div className="flex-shrink-0">
               <img 
-                src={"https://uat.refex.co.in/uploads/images/image-1768989574986-172947697.png"} 
+                src={mapImage} 
                 alt="India Map"
                 className="h-auto rounded-lg"
                 style={{ maxWidth: '100%',    height: '550px' }}
