@@ -74,15 +74,15 @@ export default function BusinessSectionCMS() {
           order: 3,
           isActive: true,
         },
-        {
-          id: 4,
-          title: 'Refrigerant Gas',
-          description: 'A leading global supplier specializing in eco-friendly refrigerant gases, equipped with automated filling, rigorous quality control, and certified storage facilities',
-          image: 'https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/a8311a97127f77813e6f7198f947d66c.png',
-          link: '/refrigerant-gas',
-          order: 4,
-          isActive: true,
-        },
+        // {
+        //   id: 4,
+        //   title: 'Refrigerant Gas',
+        //   description: 'A leading global supplier specializing in eco-friendly refrigerant gases, equipped with automated filling, rigorous quality control, and certified storage facilities',
+        //   image: 'https://static.readdy.ai/image/d0ead66ce635a168f1e83b108be94826/a8311a97127f77813e6f7198f947d66c.png',
+        //   link: '/refrigerant-gas',
+        //   order: 4,
+        //   isActive: true,
+        // },
       ]);
     } finally {
       setLoading(false);

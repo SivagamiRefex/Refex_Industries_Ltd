@@ -7,7 +7,7 @@ const AboutUsPage = lazy(() => import('../pages/about-us/page'));
 const AshUtilizationPage = lazy(() => import('../pages/ash-utilization/page'));
 const GreenMobilityPage = lazy(() => import('../pages/green-mobility/page'));
 const VenwindRefexPage = lazy(() => import('../pages/venwind-refex/page'));
-const RefrigerantGasPage = lazy(() => import('../pages/refrigerant-gas/page'));
+// const RefrigerantGasPage = lazy(() => import('../pages/refrigerant-gas/page'));
 const ESGPage = lazy(() => import('../pages/esg/page'));
 const NewsroomPage = lazy(() => import('../pages/newsroom/page'));
 const ContactPage = lazy(() => import('../pages/contact/page'));
@@ -93,10 +93,10 @@ const routes: RouteObject[] = [
     path: '/venwind-refex',
     element: <VenwindRefexPage />,
   },
-  {
-    path: '/refrigerant-gas',
-    element: <RefrigerantGasPage />,
-  },
+  // {
+  //   path: '/refrigerant-gas',
+  //   element: <RefrigerantGasPage />,
+  // },
   {
     path: '/esg',
     element: <ESGPage />,

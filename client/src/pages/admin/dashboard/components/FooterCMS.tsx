@@ -66,7 +66,7 @@ function getDefaultFooterData(): FooterData {
           { name: 'Ash Utilization and Coal Handling', href: '/ash-utilization/' },
           { name: 'Green Mobility', href: '/green-mobility/' },
           { name: 'Venwind Refex', href: '/venwind-refex/' },
-          { name: 'Refrigerant Gas', href: '/refrigerant-gas/' },
+          // { name: 'Refrigerant Gas', href: '/refrigerant-gas/' },
         ],
       },
       {
