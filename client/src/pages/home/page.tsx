@@ -25,7 +25,7 @@ export default function HomePage() {
       </main>
       <Footer />
       <ScrollToTop />
-      <WelcomeModal />
+      {/* <WelcomeModal /> */}
     </div>
   );
 }
