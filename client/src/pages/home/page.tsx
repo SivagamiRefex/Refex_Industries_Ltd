@@ -8,6 +8,7 @@ import NewsroomSection from './components/NewsroomSection';
 import AwardsSection from './components/AwardsSection';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import WelcomeModal from './components/WelcomeModal';
 
 export default function HomePage() {
   return (
@@ -24,6 +25,7 @@ export default function HomePage() {
       </main>
       <Footer />
       <ScrollToTop />
+      <WelcomeModal />
     </div>
   );
 }
