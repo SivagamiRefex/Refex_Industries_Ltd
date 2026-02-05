@@ -83,30 +83,15 @@ export default function HeroSlider() {
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 z-20 flex items-end pb-8 lg:pb-12">
-            <div className="w-full px-4 lg:px-8">
-              <div className="max-w-7xl mx-auto">
-                <h1 className="text-4xl lg:text-6xl font-bold text-white max-w-2xl text-left">
-                  {slide.title}
-                </h1>
-              </div>
+            <div className="w-full px-4 lg:px-8 " 
+              style={{ 
+                 width: '100%',
+              }}>
+              <h1 className="text-4xl lg:text-6xl font-bold text-white text-left whitespace-nowrap min-w-max">{slide.title}</h1>
             </div>
           </div>
         </div>
       ))}
-
-      {/* Bullets */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-30 flex gap-3 hidden">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all cursor-pointer ${
-              index === currentSlide ? 'bg-white w-8' : 'bg-white/50'
-            }`}
-            aria-label={`Go to slide ${index + 1}`}
-          ></button>
-        ))}
-      </div>
     </section>
   );
 }

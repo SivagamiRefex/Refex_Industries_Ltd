@@ -715,6 +715,14 @@ sequelize
 function startServer() {
   const server = app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`);
+    
+    // Auto-start cron jobs for daily stock data updates at 8:00 PM
+    try {
+      require('./cronJobs');
+      console.log('✓ Stock data cron job active (auto-runs daily at 8:00 PM)');
+    } catch (error) {
+      console.error('Error initializing cron jobs:', error.message);
+    }
   });
 
   server.on('error', (err) => {

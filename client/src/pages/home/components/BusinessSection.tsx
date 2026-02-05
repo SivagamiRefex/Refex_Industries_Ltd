@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { homeCmsApi } from '../../../services/api';
 
 interface Business {
@@ -12,9 +12,10 @@ interface Business {
 }
 
 export default function BusinessSection() {
-  const [currentIndex, setCurrentIndex] = useState(0);
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isScrollingRef = useRef(false);
 
   useEffect(() => {
     const fetchBusinesses = async () => {
@@ -84,27 +85,108 @@ export default function BusinessSection() {
     fetchBusinesses();
   }, []);
 
-  // Create extended array for seamless looping
-  const extendedBusinesses = businesses.length > 0 ? [...businesses, ...businesses, ...businesses] : [];
-
+  // Setup infinite scroll effect
   useEffect(() => {
-    if (businesses.length === 0) return;
+    if (businesses.length === 0 || !scrollContainerRef.current) return;
+
+    const container = scrollContainerRef.current;
     
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => prev + 1);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [businesses.length]);
+    // Wait for cards to render, then calculate and set scroll position
+    const setupScroll = () => {
+      if (!container.children.length) {
+        setTimeout(setupScroll, 100);
+        return;
+      }
 
-  // Reset to middle section when reaching end for seamless loop
-  useEffect(() => {
-    if (businesses.length === 0) return;
-    if (currentIndex >= businesses.length * 2) {
-      setTimeout(() => {
-        setCurrentIndex(businesses.length);
-      }, 500);
+      // Calculate width of one set of businesses
+      let totalWidth = 0;
+      for (let i = 0; i < businesses.length; i++) {
+        const card = container.children[i] as HTMLElement;
+        if (card) {
+          totalWidth += card.offsetWidth + 24; // 24px is gap-6
+        }
+      }
+
+      // Set initial scroll position to the middle (second set of businesses)
+      if (totalWidth > 0) {
+        container.scrollLeft = totalWidth;
+      }
+    };
+
+    // Initial setup after a short delay to ensure rendering
+    const timeoutId = setTimeout(setupScroll, 100);
+
+    const handleScroll = () => {
+      if (isScrollingRef.current || !container.children.length) return;
+
+      // Recalculate width dynamically
+      let totalWidth = 0;
+      for (let i = 0; i < businesses.length; i++) {
+        const card = container.children[i] as HTMLElement;
+        if (card) {
+          totalWidth += card.offsetWidth + 24;
+        }
+      }
+
+      if (totalWidth === 0) return;
+
+      const scrollLeft = container.scrollLeft;
+      const threshold = 50; // Threshold for reset
+      
+      // If scrolled to the end (third set), reset to middle (second set)
+      if (scrollLeft >= totalWidth * 2 - threshold) {
+        isScrollingRef.current = true;
+        container.scrollLeft = totalWidth;
+        setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 50);
+      }
+      // If scrolled to the beginning (first set), reset to middle (second set)
+      else if (scrollLeft <= threshold) {
+        isScrollingRef.current = true;
+        container.scrollLeft = totalWidth;
+        setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 50);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    
+    // Handle window resize to recalculate
+    const handleResize = () => {
+      setupScroll();
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      clearTimeout(timeoutId);
+      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [businesses]);
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current && !isScrollingRef.current) {
+      const cardWidth = scrollContainerRef.current.children[0]?.clientWidth || 0;
+      const gap = 24; // gap-6 = 24px
+      scrollContainerRef.current.scrollBy({
+        left: -(cardWidth + gap) * 3,
+        behavior: 'smooth',
+      });
     }
-  }, [currentIndex, businesses.length]);
+  };
+
+  const scrollRight = () => {
+    if (scrollContainerRef.current && !isScrollingRef.current) {
+      const cardWidth = scrollContainerRef.current.children[0]?.clientWidth || 0;
+      const gap = 24; // gap-6 = 24px
+      scrollContainerRef.current.scrollBy({
+        left: (cardWidth + gap) * 3,
+        behavior: 'smooth',
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -141,60 +223,66 @@ export default function BusinessSection() {
         </div>
 
         <div className="relative">
-          {/* Carousel Container */}
-          <div className="overflow-hidden">
-            <div 
-              className="flex transition-transform duration-500 ease-in-out gap-6"
-              style={{ 
-                transform: `translateX(-${currentIndex * 25.75}%)`,
-                transitionProperty: currentIndex >= businesses.length * 2 ? 'none' : 'transform'
-              }}
-            >
-              {extendedBusinesses.map((business, index) => (
-                <div
-                  key={index}
-                  className="w-[calc(25%-18px)] flex-shrink-0"
-                >
-                  <div className="group cursor-pointer relative overflow-hidden h-[420px] border-b-4 border-transparent hover:border-[#7cd144] transition-colors duration-300">
-                    <img
-                      src={business.image}
-                      alt={business.title}
-                      className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent"></div>
-                    
-                    <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
-                      <h3 className="text-xl lg:text-2xl font-bold mb-3 leading-tight text-[#7cd144]">
-                        {business.title}
-                      </h3>
-                      <p className="text-sm text-white/90 mb-6 leading-relaxed">
-                        {business.description}
-                      </p>
-                      <a
-                        href={business.link}
-                        className="inline-flex items-center justify-center w-32 px-4 py-2 rounded-full text-[#7cd144] font-semibold transition-all cursor-pointer whitespace-nowrap text-sm border-2 border-[#7cd144] hover:bg-[#7cd144] hover:text-white group/btn"
-                      >
-                        <span className="group-hover/btn:text-white">Explore</span>
-                        <i className="ri-arrow-right-line ml-2 text-white group-hover/btn:text-white"></i>
-                      </a>
-                    </div>
+          {/* Scroll Buttons */}
+          {businesses.length > 3 && (
+            <>
+              <button
+                onClick={scrollLeft}
+                className="absolute left-[-20px] lg:left-[-40px] top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg rounded-full p-3 transition-all hover:scale-110"
+                aria-label="Scroll left"
+              >
+                <i className="ri-arrow-left-line text-2xl text-[#1a1a1a]"></i>
+              </button>
+              <button
+                onClick={scrollRight}
+                className="absolute right-[-20px] lg:right-[-40px] top-1/2 -translate-y-1/2 z-20 bg-white/90 hover:bg-white shadow-lg rounded-full p-3 transition-all hover:scale-110"
+                aria-label="Scroll right"
+              >
+                <i className="ri-arrow-right-line text-2xl text-[#1a1a1a]"></i>
+              </button>
+            </>
+          )}
+
+          {/* Scrollable Cards Container */}
+          <div 
+            ref={scrollContainerRef}
+            className="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
+            style={{
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
+          >
+            {/* Render businesses 3 times for seamless looping */}
+            {[...businesses, ...businesses, ...businesses].map((business, index) => (
+              <div
+                key={`${business.id}-${index}`}
+                className="w-full sm:w-[calc(50%-12px)] lg:w-[calc((100%-48px)/3)] flex-shrink-0 min-w-[280px]"
+              >
+                <div className="group cursor-pointer relative overflow-hidden h-[420px] border-b-4 border-transparent hover:border-[#7cd144] transition-colors duration-300">
+                  <img
+                    src={business.image}
+                    alt={business.title}
+                    className="w-full h-full object-cover object-center group-hover:scale-110 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/60 to-transparent"></div>
+                  
+                  <div className="absolute inset-0 p-6 flex flex-col justify-end text-white">
+                    <h3 className="text-xl lg:text-2xl font-bold mb-3 leading-tight text-[#7cd144]">
+                      {business.title}
+                    </h3>
+                    <p className="text-sm text-white/90 mb-6 leading-relaxed">
+                      {business.description}
+                    </p>
+                    <a
+                      href={business.link}
+                      className="inline-flex items-center justify-center w-32 px-4 py-2 rounded-full text-[#7cd144] font-semibold transition-all cursor-pointer whitespace-nowrap text-sm border-2 border-[#7cd144] hover:bg-[#7cd144] hover:text-white group/btn"
+                    >
+                      <span className="group-hover/btn:text-white">Explore</span>
+                      <i className="ri-arrow-right-line ml-2 text-white group-hover/btn:text-white"></i>
+                    </a>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Pagination Dots */}
-          <div className="hidden justify-center gap-2 mt-8">
-            {businesses.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(businesses.length + index)}
-                className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
-                  (currentIndex % businesses.length) === index ? 'bg-[#7cd144] w-8' : 'bg-gray-300'
-                }`}
-                aria-label={`Go to slide ${index + 1}`}
-              ></button>
+              </div>
             ))}
           </div>
         </div>
