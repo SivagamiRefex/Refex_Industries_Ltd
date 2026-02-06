@@ -25,7 +25,7 @@ class EmailService {
       // Email content
       const mailOptions = {
         from: 'Contact Form <info@refex.co.in>',
-        to: 'raghul.je@refex.co.in',
+        to: 'info@refex.co.in',
         subject: 'Contact Form',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
