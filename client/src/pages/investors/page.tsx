@@ -6,6 +6,7 @@ import StockQuote from './components/StockQuote';
 import StockChart from './components/StockChart';
 import RelatedLinks from './components/RelatedLinks';
 import HistoricalStockQuote from './components/HistoricalStockQuote';
+import WelcomeModal from '../home/components/WelcomeModal';
 
 export default function InvestorsPage() {
   return (
@@ -20,6 +21,8 @@ export default function InvestorsPage() {
 
       </main>
       <Footer />
+      <WelcomeModal />
+
       <ScrollToTop />
     </div>
   );
