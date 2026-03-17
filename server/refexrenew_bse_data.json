@@ -1,5 +1,401 @@
 [
   {
+    "date": "2026-03-16",
+    "symbol": "REFEXRENEW",
+    "open": 254.95,
+    "high": 266,
+    "low": 241.05,
+    "close": 249.85,
+    "volume": 1456,
+    "tradeValue": 371498,
+    "noOfTrades": 44,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-13",
+    "symbol": "REFEXRENEW",
+    "open": 245,
+    "high": 254.95,
+    "low": 240,
+    "close": 253.35,
+    "volume": 1456,
+    "tradeValue": 360737,
+    "noOfTrades": 33,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-12",
+    "symbol": "REFEXRENEW",
+    "open": 245.4,
+    "high": 256,
+    "low": 245,
+    "close": 245.6,
+    "volume": 1126,
+    "tradeValue": 280852,
+    "noOfTrades": 23,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-11",
+    "symbol": "REFEXRENEW",
+    "open": 250,
+    "high": 258,
+    "low": 247.95,
+    "close": 250.4,
+    "volume": 1122,
+    "tradeValue": 281277,
+    "noOfTrades": 17,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-10",
+    "symbol": "REFEXRENEW",
+    "open": 248.9,
+    "high": 257,
+    "low": 245.5,
+    "close": 247.9,
+    "volume": 442,
+    "tradeValue": 110179,
+    "noOfTrades": 26,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-09",
+    "symbol": "REFEXRENEW",
+    "open": 262,
+    "high": 262,
+    "low": 248.9,
+    "close": 248.9,
+    "volume": 539,
+    "tradeValue": 134622,
+    "noOfTrades": 29,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-06",
+    "symbol": "REFEXRENEW",
+    "open": 249.55,
+    "high": 262,
+    "low": 249.55,
+    "close": 262,
+    "volume": 281,
+    "tradeValue": 72280,
+    "noOfTrades": 15,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-05",
+    "symbol": "REFEXRENEW",
+    "open": 249.55,
+    "high": 252,
+    "low": 249.55,
+    "close": 249.55,
+    "volume": 116,
+    "tradeValue": 29070,
+    "noOfTrades": 9,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-04",
+    "symbol": "REFEXRENEW",
+    "open": 260,
+    "high": 262.45,
+    "low": 249.35,
+    "close": 249.45,
+    "volume": 1266,
+    "tradeValue": 319825,
+    "noOfTrades": 52,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-03-02",
+    "symbol": "REFEXRENEW",
+    "open": 265.95,
+    "high": 265.95,
+    "low": 253.05,
+    "close": 262.45,
+    "volume": 418,
+    "tradeValue": 108460,
+    "noOfTrades": 36,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-27",
+    "symbol": "REFEXRENEW",
+    "open": 270.9,
+    "high": 270.9,
+    "low": 260,
+    "close": 265.6,
+    "volume": 38,
+    "tradeValue": 10151,
+    "noOfTrades": 12,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-26",
+    "symbol": "REFEXRENEW",
+    "open": 275.6,
+    "high": 275.6,
+    "low": 265.1,
+    "close": 270.9,
+    "volume": 464,
+    "tradeValue": 125736,
+    "noOfTrades": 19,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-25",
+    "symbol": "REFEXRENEW",
+    "open": 265.05,
+    "high": 267,
+    "low": 257.95,
+    "close": 264.35,
+    "volume": 2359,
+    "tradeValue": 624327,
+    "noOfTrades": 51,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-24",
+    "symbol": "REFEXRENEW",
+    "open": 275.35,
+    "high": 275.35,
+    "low": 264.1,
+    "close": 265.05,
+    "volume": 52,
+    "tradeValue": 13869,
+    "noOfTrades": 10,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-23",
+    "symbol": "REFEXRENEW",
+    "open": 270,
+    "high": 279.95,
+    "low": 263.4,
+    "close": 275.5,
+    "volume": 368,
+    "tradeValue": 98766,
+    "noOfTrades": 31,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-20",
+    "symbol": "REFEXRENEW",
+    "open": 272.05,
+    "high": 285,
+    "low": 263.05,
+    "close": 270,
+    "volume": 490,
+    "tradeValue": 133807,
+    "noOfTrades": 36,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-19",
+    "symbol": "REFEXRENEW",
+    "open": 287.8,
+    "high": 288,
+    "low": 270.25,
+    "close": 273.5,
+    "volume": 1123,
+    "tradeValue": 316907,
+    "noOfTrades": 58,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-18",
+    "symbol": "REFEXRENEW",
+    "open": 256.05,
+    "high": 280,
+    "low": 256.05,
+    "close": 275.95,
+    "volume": 905,
+    "tradeValue": 250049,
+    "noOfTrades": 32,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-17",
+    "symbol": "REFEXRENEW",
+    "open": 270.05,
+    "high": 279.5,
+    "low": 261.1,
+    "close": 268.3,
+    "volume": 381,
+    "tradeValue": 101385,
+    "noOfTrades": 46,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-16",
+    "symbol": "REFEXRENEW",
+    "open": 270.85,
+    "high": 273,
+    "low": 270.85,
+    "close": 273,
+    "volume": 54,
+    "tradeValue": 14734,
+    "noOfTrades": 4,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-13",
+    "symbol": "REFEXRENEW",
+    "open": 287.4,
+    "high": 287.4,
+    "low": 268.15,
+    "close": 271.25,
+    "volume": 2992,
+    "tradeValue": 815920,
+    "noOfTrades": 64,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-12",
+    "symbol": "REFEXRENEW",
+    "open": 295,
+    "high": 295.75,
+    "low": 281.05,
+    "close": 281.75,
+    "volume": 1327,
+    "tradeValue": 379164,
+    "noOfTrades": 75,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-11",
+    "symbol": "REFEXRENEW",
+    "open": 291,
+    "high": 295.75,
+    "low": 282.7,
+    "close": 295.75,
+    "volume": 3130,
+    "tradeValue": 913403,
+    "noOfTrades": 97,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-10",
+    "symbol": "REFEXRENEW",
+    "open": 277.35,
+    "high": 281.75,
+    "low": 277.35,
+    "close": 281.7,
+    "volume": 3600,
+    "tradeValue": 1012153,
+    "noOfTrades": 73,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-09",
+    "symbol": "REFEXRENEW",
+    "open": 268.05,
+    "high": 278.5,
+    "low": 268.05,
+    "close": 268.35,
+    "volume": 822,
+    "tradeValue": 221885,
+    "noOfTrades": 36,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-06",
+    "symbol": "REFEXRENEW",
+    "open": 276.65,
+    "high": 276.65,
+    "low": 268,
+    "close": 268.05,
+    "volume": 846,
+    "tradeValue": 232722,
+    "noOfTrades": 17,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-05",
+    "symbol": "REFEXRENEW",
+    "open": 282.5,
+    "high": 282.5,
+    "low": 273.8,
+    "close": 276.65,
+    "volume": 867,
+    "tradeValue": 238511,
+    "noOfTrades": 41,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-04",
+    "symbol": "REFEXRENEW",
+    "open": 265.1,
+    "high": 274.9,
+    "low": 252,
+    "close": 270.8,
+    "volume": 1828,
+    "tradeValue": 488055,
+    "noOfTrades": 49,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-03",
+    "symbol": "REFEXRENEW",
+    "open": 268.75,
+    "high": 278.4,
+    "low": 260.05,
+    "close": 264.75,
+    "volume": 1367,
+    "tradeValue": 365202,
+    "noOfTrades": 61,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-02-02",
+    "symbol": "REFEXRENEW",
+    "open": 265.7,
+    "high": 288.75,
+    "low": 264,
+    "close": 268.7,
+    "volume": 293,
+    "tradeValue": 78915,
+    "noOfTrades": 26,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-01-30",
+    "symbol": "REFEXRENEW",
+    "open": 262.35,
+    "high": 275.6,
+    "low": 262.35,
+    "close": 264.7,
+    "volume": 2296,
+    "tradeValue": 606958,
+    "noOfTrades": 50,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-01-29",
+    "symbol": "REFEXRENEW",
+    "open": 277.35,
+    "high": 283.9,
+    "low": 270,
+    "close": 276.05,
+    "volume": 2081,
+    "tradeValue": 573800,
+    "noOfTrades": 46,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2026-01-28",
+    "symbol": "REFEXRENEW",
+    "open": 275.1,
+    "high": 279.95,
+    "low": 268.05,
+    "close": 271.9,
+    "volume": 773,
+    "tradeValue": 211908,
+    "noOfTrades": 39,
+    "exchange": "BSE"
+  },
+  {
     "date": "2026-01-27",
     "symbol": "REFEXRENEW",
     "open": 264.05,
@@ -636,6 +1032,18 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-11-10",
+    "symbol": "REFEXRENEW",
+    "open": 665,
+    "high": 669,
+    "low": 645,
+    "close": 650,
+    "volume": 741,
+    "tradeValue": 485287,
+    "noOfTrades": 56,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-11-07",
     "symbol": "REFEXRENEW",
     "open": 680,
@@ -1104,6 +1512,18 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-09-10",
+    "symbol": "REFEXRENEW",
+    "open": 732,
+    "high": 753.45,
+    "low": 724,
+    "close": 752.9,
+    "volume": 2207,
+    "tradeValue": 1649685,
+    "noOfTrades": 82,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-09-09",
     "symbol": "REFEXRENEW",
     "open": 684,
@@ -1152,6 +1572,54 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-09-03",
+    "symbol": "REFEXRENEW",
+    "open": 630,
+    "high": 641.7,
+    "low": 602.9,
+    "close": 626.1,
+    "volume": 1721,
+    "tradeValue": 1061204,
+    "noOfTrades": 69,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-09-02",
+    "symbol": "REFEXRENEW",
+    "open": 641.9,
+    "high": 642.75,
+    "low": 586.6,
+    "close": 611.2,
+    "volume": 839,
+    "tradeValue": 517060,
+    "noOfTrades": 56,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-09-01",
+    "symbol": "REFEXRENEW",
+    "open": 629.45,
+    "high": 659,
+    "low": 600.5,
+    "close": 616.6,
+    "volume": 993,
+    "tradeValue": 623672,
+    "noOfTrades": 69,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-29",
+    "symbol": "REFEXRENEW",
+    "open": 600,
+    "high": 629.5,
+    "low": 600,
+    "close": 628.6,
+    "volume": 1084,
+    "tradeValue": 676742,
+    "noOfTrades": 55,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-08-28",
     "symbol": "REFEXRENEW",
     "open": 614.75,
@@ -1161,6 +1629,54 @@
     "volume": 289,
     "tradeValue": 173952,
     "noOfTrades": 47,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-26",
+    "symbol": "REFEXRENEW",
+    "open": 615.5,
+    "high": 640,
+    "low": 600,
+    "close": 606.45,
+    "volume": 886,
+    "tradeValue": 542518,
+    "noOfTrades": 58,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-25",
+    "symbol": "REFEXRENEW",
+    "open": 636.65,
+    "high": 644.95,
+    "low": 621.8,
+    "close": 624.3,
+    "volume": 1518,
+    "tradeValue": 951474,
+    "noOfTrades": 39,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-22",
+    "symbol": "REFEXRENEW",
+    "open": 636,
+    "high": 667.6,
+    "low": 607,
+    "close": 630.15,
+    "volume": 6057,
+    "tradeValue": 3905705,
+    "noOfTrades": 140,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-21",
+    "symbol": "REFEXRENEW",
+    "open": 643,
+    "high": 662,
+    "low": 625,
+    "close": 635.85,
+    "volume": 2247,
+    "tradeValue": 1453984,
+    "noOfTrades": 59,
     "exchange": "BSE"
   },
   {
@@ -1176,6 +1692,54 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-08-19",
+    "symbol": "REFEXRENEW",
+    "open": 665,
+    "high": 666,
+    "low": 631.95,
+    "close": 642.05,
+    "volume": 5454,
+    "tradeValue": 3470327,
+    "noOfTrades": 171,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-18",
+    "symbol": "REFEXRENEW",
+    "open": 703.5,
+    "high": 703.5,
+    "low": 665,
+    "close": 665.2,
+    "volume": 2135,
+    "tradeValue": 1431861,
+    "noOfTrades": 100,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-14",
+    "symbol": "REFEXRENEW",
+    "open": 695,
+    "high": 717,
+    "low": 680.05,
+    "close": 700,
+    "volume": 397,
+    "tradeValue": 276262,
+    "noOfTrades": 27,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-13",
+    "symbol": "REFEXRENEW",
+    "open": 721,
+    "high": 721,
+    "low": 685.05,
+    "close": 695.85,
+    "volume": 908,
+    "tradeValue": 638276,
+    "noOfTrades": 58,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-08-12",
     "symbol": "REFEXRENEW",
     "open": 700,
@@ -1185,6 +1749,18 @@
     "volume": 1225,
     "tradeValue": 858062,
     "noOfTrades": 72,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-08-11",
+    "symbol": "REFEXRENEW",
+    "open": 659.35,
+    "high": 688,
+    "low": 659.35,
+    "close": 676.95,
+    "volume": 541,
+    "tradeValue": 365974,
+    "noOfTrades": 38,
     "exchange": "BSE"
   },
   {
@@ -1440,6 +2016,18 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-07-10",
+    "symbol": "REFEXRENEW",
+    "open": 1019.9,
+    "high": 1027,
+    "low": 981,
+    "close": 1027,
+    "volume": 15049,
+    "tradeValue": 14825351,
+    "noOfTrades": 79,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-07-09",
     "symbol": "REFEXRENEW",
     "open": 1002,
@@ -1449,6 +2037,54 @@
     "volume": 22006,
     "tradeValue": 21582109,
     "noOfTrades": 124,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-07-08",
+    "symbol": "REFEXRENEW",
+    "open": 1106.85,
+    "high": 1106.9,
+    "low": 1002,
+    "close": 1013.45,
+    "volume": 8747,
+    "tradeValue": 9411924,
+    "noOfTrades": 196,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-07-07",
+    "symbol": "REFEXRENEW",
+    "open": 1004,
+    "high": 1054.2,
+    "low": 1004,
+    "close": 1054.2,
+    "volume": 2869,
+    "tradeValue": 3019871,
+    "noOfTrades": 72,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-07-04",
+    "symbol": "REFEXRENEW",
+    "open": 999.9,
+    "high": 1007.3,
+    "low": 976,
+    "close": 1004,
+    "volume": 8033,
+    "tradeValue": 8006288,
+    "noOfTrades": 118,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-07-03",
+    "symbol": "REFEXRENEW",
+    "open": 953,
+    "high": 964,
+    "low": 948,
+    "close": 959.35,
+    "volume": 18951,
+    "tradeValue": 18090753,
+    "noOfTrades": 54,
     "exchange": "BSE"
   },
   {
@@ -1497,6 +2133,18 @@
     "volume": 4430,
     "tradeValue": 4087073,
     "noOfTrades": 103,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-06-26",
+    "symbol": "REFEXRENEW",
+    "open": 915.1,
+    "high": 945.7,
+    "low": 915.1,
+    "close": 929.4,
+    "volume": 134,
+    "tradeValue": 125391,
+    "noOfTrades": 18,
     "exchange": "BSE"
   },
   {
@@ -1584,6 +2232,30 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-06-16",
+    "symbol": "REFEXRENEW",
+    "open": 940,
+    "high": 955,
+    "low": 915.2,
+    "close": 938.65,
+    "volume": 1012,
+    "tradeValue": 938354,
+    "noOfTrades": 63,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-06-13",
+    "symbol": "REFEXRENEW",
+    "open": 934.45,
+    "high": 986.1,
+    "low": 917.7,
+    "close": 956.45,
+    "volume": 1592,
+    "tradeValue": 1512725,
+    "noOfTrades": 72,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-06-12",
     "symbol": "REFEXRENEW",
     "open": 978,
@@ -1593,6 +2265,30 @@
     "volume": 1771,
     "tradeValue": 1687970,
     "noOfTrades": 76,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-06-11",
+    "symbol": "REFEXRENEW",
+    "open": 995,
+    "high": 995,
+    "low": 939.2,
+    "close": 952.8,
+    "volume": 1688,
+    "tradeValue": 1614145,
+    "noOfTrades": 74,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-06-10",
+    "symbol": "REFEXRENEW",
+    "open": 970,
+    "high": 1000,
+    "low": 950,
+    "close": 988.45,
+    "volume": 6370,
+    "tradeValue": 6268817,
+    "noOfTrades": 142,
     "exchange": "BSE"
   },
   {
@@ -1728,6 +2424,18 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-05-23",
+    "symbol": "REFEXRENEW",
+    "open": 804.95,
+    "high": 819.95,
+    "low": 773,
+    "close": 800,
+    "volume": 998,
+    "tradeValue": 797644,
+    "noOfTrades": 47,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-05-22",
     "symbol": "REFEXRENEW",
     "open": 819,
@@ -1749,6 +2457,18 @@
     "volume": 1424,
     "tradeValue": 1158330,
     "noOfTrades": 60,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-05-20",
+    "symbol": "REFEXRENEW",
+    "open": 820,
+    "high": 832,
+    "low": 796,
+    "close": 798,
+    "volume": 1933,
+    "tradeValue": 1570531,
+    "noOfTrades": 94,
     "exchange": "BSE"
   },
   {
@@ -1776,6 +2496,18 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-05-15",
+    "symbol": "REFEXRENEW",
+    "open": 792,
+    "high": 792,
+    "low": 775,
+    "close": 780.2,
+    "volume": 635,
+    "tradeValue": 499645,
+    "noOfTrades": 43,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-05-14",
     "symbol": "REFEXRENEW",
     "open": 752.05,
@@ -1785,6 +2517,18 @@
     "volume": 407,
     "tradeValue": 310306,
     "noOfTrades": 41,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-05-13",
+    "symbol": "REFEXRENEW",
+    "open": 740.1,
+    "high": 794.95,
+    "low": 740.1,
+    "close": 779.35,
+    "volume": 1255,
+    "tradeValue": 981363,
+    "noOfTrades": 66,
     "exchange": "BSE"
   },
   {
@@ -1809,6 +2553,18 @@
     "volume": 1643,
     "tradeValue": 1217262,
     "noOfTrades": 44,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-05-08",
+    "symbol": "REFEXRENEW",
+    "open": 781.55,
+    "high": 798.95,
+    "low": 750,
+    "close": 754.7,
+    "volume": 1132,
+    "tradeValue": 868750,
+    "noOfTrades": 57,
     "exchange": "BSE"
   },
   {
@@ -1872,6 +2628,18 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-04-29",
+    "symbol": "REFEXRENEW",
+    "open": 751.4,
+    "high": 770,
+    "low": 721,
+    "close": 723.4,
+    "volume": 1168,
+    "tradeValue": 875204,
+    "noOfTrades": 76,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-04-28",
     "symbol": "REFEXRENEW",
     "open": 785.7,
@@ -1881,6 +2649,18 @@
     "volume": 627,
     "tradeValue": 470104,
     "noOfTrades": 55,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-04-25",
+    "symbol": "REFEXRENEW",
+    "open": 785.05,
+    "high": 785.05,
+    "low": 750,
+    "close": 781.8,
+    "volume": 1936,
+    "tradeValue": 1470081,
+    "noOfTrades": 51,
     "exchange": "BSE"
   },
   {
@@ -1992,6 +2772,18 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-04-08",
+    "symbol": "REFEXRENEW",
+    "open": 675,
+    "high": 722,
+    "low": 651,
+    "close": 679.55,
+    "volume": 5777,
+    "tradeValue": 3964918,
+    "noOfTrades": 309,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-04-07",
     "symbol": "REFEXRENEW",
     "open": 647,
@@ -2016,6 +2808,18 @@
     "exchange": "BSE"
   },
   {
+    "date": "2025-04-03",
+    "symbol": "REFEXRENEW",
+    "open": 638.05,
+    "high": 668,
+    "low": 638.05,
+    "close": 650.1,
+    "volume": 1931,
+    "tradeValue": 1266647,
+    "noOfTrades": 80,
+    "exchange": "BSE"
+  },
+  {
     "date": "2025-04-02",
     "symbol": "REFEXRENEW",
     "open": 637,
@@ -2025,6 +2829,18 @@
     "volume": 10327,
     "tradeValue": 6680763,
     "noOfTrades": 241,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-04-01",
+    "symbol": "REFEXRENEW",
+    "open": 606.4,
+    "high": 639.95,
+    "low": 590,
+    "close": 613.85,
+    "volume": 3820,
+    "tradeValue": 2338085,
+    "noOfTrades": 68,
     "exchange": "BSE"
   },
   {
@@ -2349,6 +3165,18 @@
     "volume": 172,
     "tradeValue": 115645,
     "noOfTrades": 30,
+    "exchange": "BSE"
+  },
+  {
+    "date": "2025-02-17",
+    "symbol": "REFEXRENEW",
+    "open": 699.3,
+    "high": 710,
+    "low": 655.95,
+    "close": 698.95,
+    "volume": 1010,
+    "tradeValue": 690941,
+    "noOfTrades": 66,
     "exchange": "BSE"
   },
   {
