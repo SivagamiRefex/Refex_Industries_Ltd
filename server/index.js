@@ -14,12 +14,29 @@ const axios = require('axios')
 const downloadBSEExcel = require('./bseDownloader');
 const readExcelFile = require('./readExcel');
 
+const { exec } = require('child_process');
+const cron = require('node-cron');
+
 
 const app = express();
 
 
 
 // COMMON HEADERS (IMPORTANT)
+
+function runRefexRenewDailyJob() {
+  exec('node stockRefexRenewBse.js --today', (err, stdout, stderr) => {
+    if (err) {
+      console.error('Error:', err.message);
+      return;
+    }
+    console.log('REFEXRENEW daily job completed successfully');
+  });
+}
+
+
+
+cron.schedule('30 19 * * 1-5', runRefexRenewDailyJob);
 
 app.get('/api/refex-stock', async (req, res) => {
 
