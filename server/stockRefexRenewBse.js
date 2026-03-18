@@ -293,7 +293,7 @@ function loadExistingData() {
 // Fetch today's data only (single bhavcopy download)
 async function fetchTodayData() {
   const folder = path.resolve('./downloads');
-  const today = new Date("2026-01-27"); // Use actual current date
+  const today = new Date("2026-03-17"); // Use actual current date
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   
   // Skip weekends
