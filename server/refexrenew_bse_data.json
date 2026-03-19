@@ -1,16 +1,21 @@
 [
-  {
-    "date": "2026-03-17",
-    "symbol": "REFEXRENEW",
-    "open": 262,
-    "high": 262,
-    "low": 242.5,
-    "close": 252.1,
-    "volume": 1216,
-    "tradeValue": 299702,
-    "noOfTrades": 42,
-    "exchange": "BSE"
-  },
+ 
+  
+{
+  "date": "2026-03-18",
+  "symbol": "REFEXRENEW",
+  "open": 261.95,
+  "high": 261.95,
+  "low": 244.05,
+  "close": 247.25,
+  "volume": 1079,
+  "tradeValue": 270797,
+  "noOfTrades": 61,
+  "exchange": "BSE"
+},
+  
+  
+  
   {
     "date": "2026-03-16",
     "symbol": "REFEXRENEW",
