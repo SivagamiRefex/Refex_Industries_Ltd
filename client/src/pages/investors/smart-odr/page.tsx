@@ -81,6 +81,12 @@ export default function SmartOdrPage() {
     return !title.includes('link to smart odr') && !url.includes('smartodr.in/login');
   };
 
+  const isSmartOdrLoginLink = (item: SmartOdrItem): boolean => {
+    const title = (item.title || '').toLowerCase();
+    const url = (item.url || '').toLowerCase();
+    return title.includes('link to smart odr') || url.includes('smartodr.in/login');
+  };
+
   const resolveDocumentUrl = (doc: any): string => {
     return (
       doc?.pdfUrl ||
@@ -195,63 +201,91 @@ export default function SmartOdrPage() {
                 </h3>
                 <div className="space-y-4">
                   {items.map((item) => (
-                    <div
-                      key={item.title}
-                      className="flex items-center gap-4 p-4 bg-white border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
-                    >
-                      <div className="flex-shrink-0">
-                        <img
-                          src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg"
-                          alt=""
-                          className="w-12 h-12"
-                        />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p
-                          className="font-medium mb-1"
-                          style={{ color: '#484848', fontSize: '16px' }}
-                        >
-                          {item.title}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-6 flex-shrink-0">
+                    isSmartOdrLoginLink(item) ? (
+                      <div key={item.title} className="flex justify-center py-2">
                         <button
                           type="button"
                           onClick={() => handleView(item.url)}
-                          className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
-                          style={{ color: '#2879b6', fontSize: '16px' }}
+                          className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold bg-[#61CE70] text-white hover:bg-[#55bb63] transition-colors cursor-pointer whitespace-nowrap"
+                          style={{ fontSize: '16px' }}
                         >
-                          View
-                          <img
-                            src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg"
-                            alt=""
-                            style={{ width: '16px', height: '16px' }}
-                          />
+                          Link to Smart ODR
+                          <svg
+                            width="14"
+                            height="14"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M7 17L17 7M17 7H9M17 7V15"
+                              stroke="white"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
                         </button>
-                        {shouldShowDownload(item) ? (
+                      </div>
+                    ) : (
+                      <div
+                        key={item.title}
+                        className="flex items-center gap-4 p-4 bg-white border border-gray-300 rounded-lg hover:border-gray-400 transition-colors"
+                      >
+                        <div className="flex-shrink-0">
+                          <img
+                            src="https://refex.co.in/wp-content/uploads/2024/12/invest-file.svg"
+                            alt=""
+                            className="w-12 h-12"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="font-medium mb-1"
+                            style={{ color: '#484848', fontSize: '16px' }}
+                          >
+                            {item.title}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-6 flex-shrink-0">
                           <button
                             type="button"
-                            onClick={() => handleDownload(item.url, item.title)}
+                            onClick={() => handleView(item.url)}
                             className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
                             style={{ color: '#2879b6', fontSize: '16px' }}
                           >
-                            Download
-                            <svg
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              xmlns="http://www.w3.org/2000/svg"
-                            >
-                              <path
-                                d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z"
-                                fill="#2879b6"
-                              />
-                            </svg>
+                            View
+                            <img
+                              src="https://refex.co.in/wp-content/uploads/2025/01/visible.svg"
+                              alt=""
+                              style={{ width: '16px', height: '16px' }}
+                            />
                           </button>
-                        ) : null}
+                          {shouldShowDownload(item) ? (
+                            <button
+                              type="button"
+                              onClick={() => handleDownload(item.url, item.title)}
+                              className="flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap font-medium"
+                              style={{ color: '#2879b6', fontSize: '16px' }}
+                            >
+                              Download
+                              <svg
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                              >
+                                <path
+                                  d="M12 16l-4-4h3V8h2v4h3l-4 4zm-8 4h16v2H4v-2z"
+                                  fill="#2879b6"
+                                />
+                              </svg>
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
-                    </div>
+                    )
                   ))}
                   {!loading && items.length === 0 && (
                     <div className="p-6 bg-white border border-gray-300 rounded-lg text-center text-gray-500">
