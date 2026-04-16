@@ -2,19 +2,31 @@ const nodemailer = require('nodemailer');
 
 class EmailService {
   constructor() {
+    const smtpHost = process.env.SMTP_HOST || 'smtp.zoho.in';
+    const smtpPort = Number(process.env.SMTP_PORT || 465);
+    const smtpSecure =
+      process.env.SMTP_SECURE !== undefined
+        ? String(process.env.SMTP_SECURE).toLowerCase() === 'true'
+        : smtpPort === 465; // SSL/TLS for 465
+    const smtpUser = process.env.SMTP_USER || 'tech@helpdesksupport.co.in';
+    const smtpPass = (process.env.SMTP_PASS || '').trim();
+
     // Create transporter using SMTP configuration
     this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || 'smtp.gmail.com',
-      port: process.env.SMTP_PORT || 587,
-      secure: false, // true for 465, false for other ports
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure, // Zoho recommended: true for 465
       auth: {
-        user: process.env.SMTP_USER || 'your-email@gmail.com',
-        pass: process.env.SMTP_PASS || 'your-app-password'
+        user: smtpUser,
+        pass: smtpPass
       },
       tls: {
         rejectUnauthorized: false
       }
     });
+
+    this.fromAddress = process.env.SMTP_FROM || smtpUser;
+    console.log(`[EmailService] SMTP configured host=${smtpHost} port=${smtpPort} secure=${smtpSecure} user=${smtpUser}`);
   }
 
   // Send contact form email
@@ -24,7 +36,7 @@ class EmailService {
 
       // Email content
       const mailOptions = {
-        from: 'Contact Form <info@refex.co.in>',
+        from: `Contact Form <${this.fromAddress}>`,
         to: 'info@refex.co.in',
         subject: 'Contact Form',
         html: `
@@ -69,7 +81,7 @@ This is a notification that a contact form was submitted on your website (${proc
   async sendAutoReply(customerEmail, customerName) {
     try {
       const mailOptions = {
-        from: 'Contact Form <info@refex.co.in>',
+        from: `Contact Form <${this.fromAddress}>`,
         to: customerEmail,
         subject: 'Thank you for contacting Refex Industries Lt',
         html: `

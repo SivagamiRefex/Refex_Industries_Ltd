@@ -4,6 +4,7 @@
   { "name": "Annual Reports", "href": "/investors/annual-reports/", "displayOrder": 2 },
   { "name": "General Meeting Updates", "href": "/investors/general-meeting-updates/", "displayOrder": 3 },
   { "name": "Investor Presentation", "href": "/investors/investor-presentation/", "displayOrder": 4 },
+  { "name": "Smart ODR", "href": "/investors/smart-odr/", "displayOrder": 4.5 },
   { "name": "Code of fair Disclosure UPSI", "href": "/investors/code-of-fair-disclosure-upsi/", "displayOrder": 5 },
   { "name": "Policies", "href": "/investors/policies/", "displayOrder": 6 },
   { "name": "Credit Ratings", "href": "/investors/credit-ratings/", "displayOrder": 7 },

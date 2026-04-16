@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { investorsCmsApi } from '../../../services/api';
+import { dedupeInvestorRelatedLinks } from '../../../utils/investorRelatedLinks';
 
 interface RelatedLink {
   id?: number;
@@ -152,11 +153,12 @@ export default function RelatedLinks() {
         } catch (err) {
           console.error('Failed to load investor pages:', err);
         }
-        
-        setInvestorLinks(allLinks.length > 0 ? allLinks : fallbackLinks);
+
+        const merged = dedupeInvestorRelatedLinks(allLinks);
+        setInvestorLinks(merged.length > 0 ? merged : dedupeInvestorRelatedLinks(fallbackLinks));
       } catch (err) {
         console.error('Failed to load links:', err);
-        setInvestorLinks(fallbackLinks);
+        setInvestorLinks(dedupeInvestorRelatedLinks(fallbackLinks));
       }
 
       // Load personnel
@@ -170,7 +172,7 @@ export default function RelatedLinks() {
       }
     } catch (err) {
       console.error('Failed to load related links data:', err);
-      setInvestorLinks(fallbackLinks);
+      setInvestorLinks(dedupeInvestorRelatedLinks(fallbackLinks));
       setKeyPersonnel(fallbackPersonnel);
     } finally {
       setLoading(false);

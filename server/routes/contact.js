@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const emailService = require('../services/email_service');
 const { body, validationResult } = require('express-validator');
+const { sendToKissflowWebhook } = require('../helpers/kissflowWebhook');
+const { getRequestMeta, phoneToDigitsOnly } = require('../helpers/requestMeta');
 
 // Contact form submission endpoint
 router.post('/contact-form', [
@@ -46,29 +48,51 @@ router.post('/contact-form', [
 
     const { fullName, email, phone, salesSupport, message } = req.body;
 
-    // Get client IP address
-    const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'Unknown';
+    const meta = getRequestMeta(req);
+    const phoneDigits = phoneToDigitsOnly(phone);
+    const websiteName = 'Refex Industries Limited';
 
     // Prepare form data for email
     const formData = {
       name: fullName,
       email,
-      phone,
+      phone: phoneDigits,
       company: salesSupport || 'Not specified',
       message,
       recaptchaToken: 'Verified', // Simple checkbox verification
-      ipAddress,
-      timestamp: new Date().toISOString()
+      ipAddress: meta.ipAddress,
+      timestamp: meta.timestamp
     };
 
-    // Send email to info@refex.co.in
-    const emailResult = await emailService.sendContactFormEmail(formData);
+    const webhookData = {
+      name: fullName,
+      email,
+      phone: phoneDigits,
+      Phone_Number: phoneDigits,
+      company: salesSupport || 'Not specified',
+      message,
+      ...meta,
+    };
 
-    // Send auto-reply to customer (optional - you can remove this if not needed)
+    // Fire-and-forget queueing, do not await to avoid blocking API response.
+    sendToKissflowWebhook(websiteName, 'Contact form', webhookData);
+
+    let emailResult = null;
+    let emailErrorMessage = null;
+
     try {
-      await emailService.sendAutoReply(email, fullName);
-    } catch (autoReplyError) {
-      console.warn('Auto-reply failed, but main email was sent:', autoReplyError.message);
+      // Send email to info@refex.co.in
+      emailResult = await emailService.sendContactFormEmail(formData);
+
+      // Send auto-reply to customer (optional)
+      try {
+        await emailService.sendAutoReply(email, fullName);
+      } catch (autoReplyError) {
+        console.warn('Auto-reply failed:', autoReplyError.message);
+      }
+    } catch (emailError) {
+      emailErrorMessage = emailError.message;
+      console.error('Primary email sending failed. Submission retained via webhook queue:', emailErrorMessage);
     }
 
     // Log successful submission
@@ -79,8 +103,10 @@ router.post('/contact-form', [
       success: true,
       message: 'Thank you for your message! We will get back to you within 24 hours.',
       data: {
-        messageId: emailResult.messageId,
-        timestamp: formData.timestamp
+        messageId: emailResult?.messageId || null,
+        timestamp: formData.timestamp,
+        emailAccepted: !!emailResult,
+        ...(emailErrorMessage ? { emailError: emailErrorMessage } : {}),
       }
     });
 

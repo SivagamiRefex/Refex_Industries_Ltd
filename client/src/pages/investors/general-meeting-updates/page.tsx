@@ -5,6 +5,7 @@ import Footer from '../../home/components/Footer';
 import ScrollToTop from '../../home/components/ScrollToTop';
 import HeroSection from '../components/HeroSection';
 import { investorsCmsApi } from '../../../services/api';
+import { dedupeInvestorRelatedLinks } from '../../../utils/investorRelatedLinks';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "";
 
@@ -147,7 +148,7 @@ const GeneralMeetingUpdatesPage = () => {
         console.error('Failed to load investor pages:', err);
       }
 
-      setSidebarLinks(allLinks);
+      setSidebarLinks(dedupeInvestorRelatedLinks(allLinks));
     } catch (err) {
       console.error('Failed to load sidebar links:', err);
     }

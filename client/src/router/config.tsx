@@ -42,6 +42,7 @@ const StatementOfDeviationPage = lazy(() => import('../pages/investors/statement
 const CSRActivitiesPage = lazy(() => import('../pages/investors/csr-activities/page'));
 const CharterDocumentsPage = lazy(() => import('../pages/investors/charter-documents/page'));
 const SchemeOfAmalgamationArrangementPage = lazy(() => import('../pages/investors/scheme-of-amalgamation-arrangement/page'));
+const SmartOdrPage = lazy(() => import('../pages/investors/smart-odr/page'));
 const InvestorDynamicPage = lazy(() => import('../pages/investors/[slug]/page'));
 const R22ProductPage = lazy(() => import('../pages/product/r22/page'));
 const R404AProductPage = lazy(() => import('../pages/product/r404a/page'));
@@ -240,6 +241,10 @@ const routes: RouteObject[] = [
   {
     path: '/investors/scheme-of-amalgamation-arrangement',
     element: <SchemeOfAmalgamationArrangementPage />,
+  },
+  {
+    path: '/investors/smart-odr',
+    element: <SmartOdrPage />,
   },
   {
     path: '/investors/:slug',

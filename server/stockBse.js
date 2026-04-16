@@ -151,7 +151,7 @@ async function fetchBseData() {
 // Alternative: Fetch using BseIndia website scraping approach
 async function fetchBseDataAlternative() {
     try {
-        const today = new Date();
+        const today = new Date();x``
         const startDate = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
         
         console.log(`📅 Fetching BSE data (alternative method)...`);

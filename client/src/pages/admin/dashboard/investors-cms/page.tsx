@@ -37,11 +37,12 @@ import InvestorCSRActivitiesCMS from '../components/InvestorCSRActivitiesCMS';
 import InvestorCharterDocumentsCMS from '../components/InvestorCharterDocumentsCMS';
 import InvestorSchemeOfAmalgamationArrangementCMS from '../components/InvestorSchemeOfAmalgamationArrangementCMS';
 import InvestorPageContentCMS from '../components/InvestorPageContentCMS';
+import InvestorSmartODRCMS from '../components/InvestorSmartODRCMS';
 
 export default function InvestorsCMSPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'hero' | 'stock-quote' | 'stock-chart' | 'historical-stock-quote' | 'related-links' | 'financial-information' | 'annual-reports' | 'key-managerial-personnel' | 'general-meeting-updates' | 'investor-presentation' | 'code-of-fair-disclosure-upsi' | 'policies' | 'credit-ratings' | 'recording-transcripts' | 'disclosure' | 'stock-exchange-quarterly-compliance' | 'familiarization-programme' | 'terms-and-conditions-of-appointment-id' | 'ipo' | 'rights-issue' | 'financial-statement-of-subsidiary' | 'annual-return' | 'book-closure' | 'secretarial-compliance-report' | 'investor-information' | 'registrar-transfer-agent' | 'newspaper-publication' | 'unpaid-dividend-list' | 'disclosures-under-sast-regulations-2011' | 'employee-stock-option-scheme' | 'monitoring-agency-report' | 'statement-of-deviation' | 'csr-activities' | 'charter-documents' | 'scheme-of-amalgamation-arrangement' | 'pages'>('hero');
+  const [activeTab, setActiveTab] = useState<'hero' | 'stock-quote' | 'stock-chart' | 'historical-stock-quote' | 'related-links' | 'financial-information' | 'annual-reports' | 'key-managerial-personnel' | 'general-meeting-updates' | 'smart-odr' | 'investor-presentation' | 'code-of-fair-disclosure-upsi' | 'policies' | 'credit-ratings' | 'recording-transcripts' | 'disclosure' | 'stock-exchange-quarterly-compliance' | 'familiarization-programme' | 'terms-and-conditions-of-appointment-id' | 'ipo' | 'rights-issue' | 'financial-statement-of-subsidiary' | 'annual-return' | 'book-closure' | 'secretarial-compliance-report' | 'investor-information' | 'registrar-transfer-agent' | 'newspaper-publication' | 'unpaid-dividend-list' | 'disclosures-under-sast-regulations-2011' | 'employee-stock-option-scheme' | 'monitoring-agency-report' | 'statement-of-deviation' | 'csr-activities' | 'charter-documents' | 'scheme-of-amalgamation-arrangement' | 'pages'>('hero');
 
   const handleLogout = async () => {
     await logout();
@@ -180,6 +181,17 @@ export default function InvestorsCMSPage() {
               >
                 <i className="ri-calendar-line mr-2"></i>
                 General Meeting Updates
+              </button>
+              <button
+                onClick={() => setActiveTab('smart-odr')}
+                className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === 'smart-odr'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <i className="ri-links-line mr-2"></i>
+                Smart ODR
               </button>
               <button
                 onClick={() => setActiveTab('investor-presentation')}
@@ -493,6 +505,7 @@ export default function InvestorsCMSPage() {
           {activeTab === 'annual-reports' && <InvestorAnnualReportsCMS />}
           {activeTab === 'key-managerial-personnel' && <InvestorKeyManagerialPersonnelCMS />}
           {activeTab === 'general-meeting-updates' && <InvestorGeneralMeetingUpdatesCMS />}
+          {activeTab === 'smart-odr' && <InvestorSmartODRCMS />}
           {activeTab === 'investor-presentation' && <InvestorInvestorPresentationCMS />}
           {activeTab === 'code-of-fair-disclosure-upsi' && <InvestorCodeOfFairDisclosureUPSICMS />}
           {activeTab === 'policies' && <InvestorPoliciesCMS />}

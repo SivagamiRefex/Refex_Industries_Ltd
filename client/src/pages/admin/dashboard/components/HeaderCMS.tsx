@@ -29,6 +29,35 @@ interface HeaderData {
   isActive: boolean;
 }
 
+const isSmartOdrEntry = (name?: string, href?: string): boolean => {
+  const normalizedName = String(name || "").trim().toLowerCase();
+  const normalizedHref = String(href || "").trim().toLowerCase().replace(/\/$/, "");
+  return (
+    normalizedName === "smart odr" ||
+    normalizedHref === "/investors/smart-odr" ||
+    normalizedHref.includes("/investors/smart-odr")
+  );
+};
+
+const sanitizeNavigationItems = (items: NavigationItem[]): NavigationItem[] =>
+  (items || [])
+    .filter((item) => !isSmartOdrEntry(item.name, item.href))
+    .map((item) => ({
+      ...item,
+      dropdown: (item.dropdown || [])
+        .filter((dropItem) => !isSmartOdrEntry(dropItem.name, dropItem.href))
+        .map((dropItem) => ({
+          ...dropItem,
+          submenu: (dropItem.submenu || []).filter(
+            (subItem) => !isSmartOdrEntry(subItem.name, subItem.href)
+          ),
+        }))
+        .filter((dropItem) => {
+          if (!dropItem.hasSubmenu) return true;
+          return (dropItem.submenu || []).length > 0;
+        }),
+    }));
+
 // Default navigation items structure
 function getDefaultNavigationItems(): NavigationItem[] {
   return [
@@ -64,13 +93,7 @@ function getDefaultNavigationItems(): NavigationItem[] {
     { 
       name: 'Investors', 
       href: '/investors',
-      dropdown: [
-        { name: 'Smart ODR', href: '#', hasSubmenu: true, submenu: [
-          { name: 'SEBI Circular or ODR', href: 'https://www.sebi.gov.in/legal/master-circulars/aug-2023/online-resolution-of-disputes-in-the-indian-securities-market_75220.html' },
-          { name: 'Online Dispute Resolution', href: 'https://refex.co.in/wp-content/uploads/2025/05/Online-Resolution-Of-Disputes.pdf' },
-          { name: 'Link to Smart ODR', href: 'https://smartodr.in/login' },
-        ]},
-      ]
+      dropdown: []
     },
     { 
       name: 'ESG', 
@@ -114,7 +137,7 @@ export default function HeaderCMS() {
           nsePrice: data.nsePrice || '',
           nseChange: data.nseChange || '',
           nseChangeIndicator: data.nseChangeIndicator || 'down',
-          navigationItems: Array.isArray(data.navigationItems) ? data.navigationItems : [],
+          navigationItems: Array.isArray(data.navigationItems) ? sanitizeNavigationItems(data.navigationItems) : [],
           contactButtonText: data.contactButtonText || 'Contact Us',
           contactButtonHref: data.contactButtonHref || '/contact/',
           isActive: data.isActive !== false,

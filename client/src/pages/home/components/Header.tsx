@@ -28,6 +28,35 @@ interface HeaderData {
   isActive?: boolean;
 }
 
+const isSmartOdrEntry = (name?: string, href?: string): boolean => {
+  const normalizedName = String(name || "").trim().toLowerCase();
+  const normalizedHref = String(href || "").trim().toLowerCase().replace(/\/$/, "");
+  return (
+    normalizedName === "smart odr" ||
+    normalizedHref === "/investors/smart-odr" ||
+    normalizedHref.includes("/investors/smart-odr")
+  );
+};
+
+const sanitizeNavigationItems = (items: NavigationItem[]): NavigationItem[] =>
+  (items || [])
+    .filter((item) => !isSmartOdrEntry(item.name, item.href))
+    .map((item) => ({
+      ...item,
+      dropdown: (item.dropdown || [])
+        .filter((dropItem) => !isSmartOdrEntry(dropItem.name, dropItem.href))
+        .map((dropItem) => ({
+          ...dropItem,
+          submenu: (dropItem.submenu || []).filter(
+            (subItem) => !isSmartOdrEntry(subItem.name, subItem.href)
+          ),
+        }))
+        .filter((dropItem) => {
+          if (!dropItem.hasSubmenu) return true;
+          return (dropItem.submenu || []).length > 0;
+        }),
+    }));
+
 // Default values
 const defaultNavItems: NavigationItem[] = [
   { 
@@ -63,13 +92,7 @@ const defaultNavItems: NavigationItem[] = [
   { 
     name: 'Investors', 
     href: '/investors',
-    dropdown: [
-      { name: 'Smart ODR', href: '#', hasSubmenu: true, submenu: [
-        { name: 'SEBI Circular or ODR', href: 'https://www.sebi.gov.in/legal/master-circulars/aug-2023/online-resolution-of-disputes-in-the-indian-securities-market_75220.html' },
-        { name: 'Online Dispute Resolution', href: '/uploads/pdfs/Online-Resolution-Of-Disputes.pdf' },
-        { name: 'Link to Smart ODR', href: 'https://smartodr.in/login' },
-      ]},
-    ]
+    dropdown: []
   },
   { 
     name: 'ESG', 
@@ -292,6 +315,7 @@ export default function Header() {
   const navItems = (headerData?.navigationItems && headerData.navigationItems.length > 0) 
     ? headerData.navigationItems 
     : defaultNavItems;
+  const sanitizedNavItems = sanitizeNavigationItems(navItems);
   
   const logoUrl = headerData?.logoUrl || "https://refex.co.in/wp-content/uploads/2024/07/logo-refex.svg";
   const logoAlt = headerData?.logoAlt || "Refex Industries Limited";
@@ -307,7 +331,7 @@ export default function Header() {
 
   // Helper function to render navigation items
   const renderDesktopNav = () => {
-    return navItems.map((item) => {
+    return sanitizedNavItems.map((item) => {
       if (item.dropdown && item.dropdown.length > 0) {
         return (
           <div key={item.name} className="relative group">
@@ -499,7 +523,7 @@ export default function Header() {
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-white border-t">
           <nav className="w-full px-6 py-4 flex flex-col gap-2">
-            {navItems.map((item) => (
+            {sanitizedNavItems.map((item) => (
               <div key={item.name}>
                 <div className="flex items-center justify-between">
                   <a

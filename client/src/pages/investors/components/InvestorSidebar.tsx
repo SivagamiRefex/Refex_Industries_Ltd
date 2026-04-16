@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { investorsCmsApi } from '../../../services/api';
+import { dedupeInvestorRelatedLinks } from '../../../utils/investorRelatedLinks';
 
 interface RelatedLink {
   id?: number;
@@ -58,8 +59,8 @@ export default function InvestorSidebar({ currentPath }: InvestorSidebarProps) {
       } catch (err) {
         console.error('Failed to load investor pages:', err);
       }
-      
-      setLinks(allLinks);
+
+      setLinks(dedupeInvestorRelatedLinks(allLinks));
     } catch (err) {
       console.error('Failed to load investor links:', err);
       setLinks([]);
