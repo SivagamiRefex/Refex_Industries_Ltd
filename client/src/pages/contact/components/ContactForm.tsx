@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
+import PhoneInput from 'react-phone-input-2';
+import { parsePhoneNumberFromString } from 'libphonenumber-js';
+import 'react-phone-input-2/lib/style.css';
 import { contactCmsApi } from '../../../services/api';
+import { useEmailValidation } from '../../../hooks/useEmailValidation';
 
 interface ContactFormConfig {
   id: number;
@@ -15,12 +19,18 @@ interface ContactFormConfig {
 export default function ContactForm() {
   const [formConfig, setFormConfig] = useState<ContactFormConfig | null>(null);
   const [loading, setLoading] = useState(true);
+  const { validateEmail } = useEmailValidation({ required: true });
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
-    phone: '',
+    phone: '+91',
     salesSupport: 'Sales',
     message: ''
+  });
+  const [formErrors, setFormErrors] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'success' | 'error' | null>(null);
@@ -66,10 +76,56 @@ export default function ContactForm() {
       ...prev,
       [name]: value
     }));
+    if (name === 'fullName' || name === 'email' || name === 'phone') {
+      setFormErrors((prev) => ({ ...prev, [name]: '' }));
+    }
+  };
+
+  const handlePhoneChange = (value: string) => {
+    const normalizedValue = value.startsWith('+') ? value : `+${value}`;
+    setFormData((prev) => ({
+      ...prev,
+      phone: normalizedValue,
+    }));
+    setFormErrors((prev) => ({ ...prev, phone: '' }));
+  };
+
+  const validateForm = () => {
+    const nextErrors = {
+      fullName: '',
+      email: '',
+      phone: '',
+    };
+
+    const fullName = formData.fullName.trim();
+    const email = formData.email;
+    const phone = formData.phone;
+
+    if (!fullName) {
+      nextErrors.fullName = 'Full name is required.';
+    } else if (!/^[A-Za-z\s.'-]{2,60}$/.test(fullName)) {
+      nextErrors.fullName = 'Enter a valid full name (letters and spaces only).';
+    }
+
+    nextErrors.email = validateEmail(email);
+
+    const phoneNumber = parsePhoneNumberFromString(phone);
+    if (!phone || !phoneNumber || !phoneNumber.isValid()) {
+      nextErrors.phone = 'Enter a valid phone number';
+    }
+
+    setFormErrors(nextErrors);
+    return !nextErrors.fullName && !nextErrors.email && !nextErrors.phone;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const isFormValid = validateForm();
+    if (!isFormValid) {
+      setSubmitStatus('error');
+      return;
+    }
     
     if (!isCaptchaChecked) {
       setSubmitStatus('error');
@@ -89,9 +145,9 @@ export default function ContactForm() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          fullName: formData.fullName,
-          email: formData.email,
-          phone: formData.phone,
+          fullName: formData.fullName.trim(),
+          email: formData.email.trim(),
+          phone: formData.phone.startsWith('+') ? formData.phone : `+${formData.phone}`,
           salesSupport: formData.salesSupport,
           message: formData.message
         })
@@ -104,9 +160,14 @@ export default function ContactForm() {
         setFormData({
           fullName: '',
           email: '',
-          phone: '',
+          phone: '+91',
           salesSupport: 'Sales',
           message: ''
+        });
+        setFormErrors({
+          fullName: '',
+          email: '',
+          phone: '',
         });
         setIsCaptchaChecked(false);
       } else {
@@ -187,6 +248,9 @@ export default function ContactForm() {
                     required
                     className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7abc43] focus:border-transparent text-sm"
                   />
+                  {formErrors.fullName && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.fullName}</p>
+                  )}
                 </div>
                 <div>
                   <input
@@ -198,20 +262,30 @@ export default function ContactForm() {
                     required
                     className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7abc43] focus:border-transparent text-sm"
                   />
+                  {formErrors.email && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.email}</p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                  <input
-                    type="tel"
-                    name="phone"
+                  <PhoneInput
+                    country="in"
                     value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="Phone"
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-[#7abc43] focus:border-transparent text-sm"
+                    onChange={handlePhoneChange}
+                    inputProps={{
+                      name: 'phone',
+                      required: true,
+                    }}
+                    containerClass="w-full"
+                    inputClass="!w-full !h-[50px] !pl-12 !text-sm !border !border-gray-300 focus:!outline-none focus:!ring-2 focus:!ring-[#7abc43] focus:!border-transparent"
+                    buttonClass="!border !border-gray-300 !bg-white"
+                    dropdownClass="!text-sm"
                   />
+                  {formErrors.phone && (
+                    <p className="mt-1 text-xs text-red-600">{formErrors.phone}</p>
+                  )}
                 </div>
                 <div className="relative">
                   <select
@@ -308,7 +382,13 @@ export default function ContactForm() {
 
               {submitStatus === 'error' && (
                 <div className="mb-4 p-4 bg-red-50 border border-red-200">
-                  <p className="text-red-700 text-sm">{!isCaptchaChecked ? 'Please verify that you are not a robot.' : errorMsg}</p>
+                  <p className="text-red-700 text-sm">
+                    {!isCaptchaChecked
+                      ? 'Please verify that you are not a robot.'
+                      : formErrors.fullName || formErrors.email || formErrors.phone
+                        ? 'Please correct the highlighted fields.'
+                        : errorMsg}
+                  </p>
                 </div>
               )}
 
