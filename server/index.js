@@ -108,6 +108,7 @@ app.use("/api/cms/header", require("./routes/header_cms"));
 app.use("/api/cms/footer", require("./routes/footer_cms"));
 app.use("/api/cms/investors", require("./routes/investors_cms"));
 app.use("/api/stock", require("./routes/stock"));
+app.use("/api/geo", require("./routes/geo"));
 app.use("/api", require("./routes/contact"));
 
 

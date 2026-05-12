@@ -32,7 +32,7 @@ class EmailService {
   // Send contact form email
   async sendContactFormEmail(formData) {
     try {
-      const { name, email, phone, company, message, recaptchaToken } = formData;
+      const { name, email, phone, city, companyName, productServices, company, message, recaptchaToken } = formData;
 
       // Email content
       const mailOptions = {
@@ -44,6 +44,9 @@ class EmailService {
             <p>Name: ${name}</p>
             <p>Email: ${email}</p>
             <p>Phone: ${phone || 'Not provided'}</p>
+            <p>City: ${city || 'Not provided'}</p>
+            <p>Company Name: ${companyName || 'Not provided'}</p>
+            <p>Product/Services: ${productServices || 'Not provided'}</p>
             <p>Sales/Support: ${company || 'Not specified'}</p>
             <p>Message: ${message}</p>
             <br>
@@ -54,6 +57,9 @@ class EmailService {
 Name: ${name}
 Email: ${email}
 Phone: ${phone || 'Not provided'}
+City: ${city || 'Not provided'}
+Company Name: ${companyName || 'Not provided'}
+Product/Services: ${productServices || 'Not provided'}
 Sales/Support: ${company || 'Not specified'}
 Message: ${message}
 
@@ -78,8 +84,12 @@ This is a notification that a contact form was submitted on your website (${proc
   }
 
   // Send auto-reply to customer
-  async sendAutoReply(customerEmail, customerName) {
+  async sendAutoReply(customerEmail, customerName, options = {}) {
     try {
+      const city = typeof options === 'object' && options !== null && 'city' in options
+        ? String(options.city || '').trim()
+        : '';
+
       const mailOptions = {
         from: `Contact Form <${this.fromAddress}>`,
         to: customerEmail,
@@ -100,6 +110,7 @@ This is a notification that a contact form was submitted on your website (${proc
                 <p style="color: #666; font-size: 15px; line-height: 1.6;">
                   Thank you for reaching out to Refex Industries Ltd. We have received your inquiry, and our team will review it carefully.
                 </p>
+                ${city ? `<p style="color: #666; font-size: 15px; line-height: 1.6;"><strong>City:</strong> ${city}</p>` : ''}
                 
                 <p style="color: #666; font-size: 15px; line-height: 1.6;">
                   We typically respond to all inquiries within 24 hours during business days. If your inquiry is urgent, please call us directly at <strong>+91-44-43405900</strong>.
@@ -136,7 +147,18 @@ This is a notification that a contact form was submitted on your website (${proc
               </p>
             </div>
           </div>
-        `
+        `,
+        text: `
+Dear ${customerName},
+
+Thank you for reaching out to Refex Industries Ltd. We have received your inquiry, and our team will review it carefully.
+${city ? `\nCity: ${city}\n` : ''}
+
+We typically respond to all inquiries within 24 hours during business days. If your inquiry is urgent, please call us directly at +91-44-43405900.
+
+Best regards,
+The Refex Industries Ltd Team
+        `.trim()
       };
 
       const result = await this.transporter.sendMail(mailOptions);

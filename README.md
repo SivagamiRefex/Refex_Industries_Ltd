@@ -84,6 +84,13 @@ npm run dev
 - `GET /api/stock/chart` - Get historical chart data
 - `GET /api/stock/historical/:type` - Get historical stock data (NSE/BSE)
 
+### Geography (contact form city list)
+- `GET /api/geo/india-cities` - Returns `{ cities: string[] }` where each string is `City, State` for India. Data comes from `@countrystatecity/countries` (ODbL). The server caches the built list in memory for 24 hours.
+
+## Attribution
+
+The India city list used by the contact form is derived from geographic datasets made available through [`@countrystatecity/countries`](https://www.npmjs.com/package/@countrystatecity/countries) and is licensed under the [Open Database License (ODbL) 1.0](https://opendatacommons.org/licenses/odbl/). See the site footer for a short attribution line shown to visitors.
+
 ## Environment Variables
 
 Create `.env` files in both `client/` and `server/` directories with necessary configuration.

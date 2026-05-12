@@ -22,9 +22,45 @@ router.post('/contact-form', [
   
   body('phone')
     .trim()
-    .isLength({ min: 10, max: 15 })
+    .notEmpty()
+    .withMessage('Please provide a valid phone number')
+    .custom((value) => {
+      const digits = String(value || '').replace(/\D/g, '');
+      return digits.length >= 10 && digits.length <= 15;
+    })
     .withMessage('Please provide a valid phone number'),
-  
+
+  body('city')
+    .trim()
+    .notEmpty()
+    .withMessage('City is required')
+    .isLength({ min: 2, max: 200 })
+    .withMessage('City is required'),
+
+  body('companyName')
+    .trim()
+    .notEmpty()
+    .withMessage('Company Name is required')
+    .isLength({ max: 150 })
+    .withMessage('Company Name is too long'),
+
+  body('productServices')
+    .trim()
+    .notEmpty()
+    .withMessage('Product/Services is required')
+    .isIn([
+      'Ash Utilisation',
+      'Coal Supply and Handling',
+      'Green Mobility',
+      'Employee Transportation',
+      'ON-Call / ON-Demand Rides',
+      'Corporate Airport Transfers',
+      'Venwind Refex',
+    ])
+    .withMessage('Invalid Product/Services selection')
+    .isLength({ max: 200 })
+    .withMessage('Product/Services is too long'),
+
   body('salesSupport')
     .optional()
     .isIn(['Sales', 'Support'])
@@ -46,7 +82,7 @@ router.post('/contact-form', [
       });
     }
 
-    const { fullName, email, phone, salesSupport, message } = req.body;
+    const { fullName, email, phone, city, companyName, productServices, salesSupport, message } = req.body;
 
     const meta = getRequestMeta(req);
     const phoneDigits = phoneToDigitsOnly(phone);
@@ -57,6 +93,9 @@ router.post('/contact-form', [
       name: fullName,
       email,
       phone: phoneDigits,
+      city: String(city || '').trim(),
+      companyName: String(companyName || '').trim(),
+      productServices: String(productServices || '').trim(),
       company: salesSupport || 'Not specified',
       message,
       recaptchaToken: 'Verified', // Simple checkbox verification
@@ -69,6 +108,11 @@ router.post('/contact-form', [
       email,
       phone: phoneDigits,
       Phone_Number: phoneDigits,
+      city: String(city || '').trim(),
+      City: String(city || '').trim(),
+      companyName: String(companyName || '').trim(),
+      Company_Name: String(companyName || '').trim(),
+      Product: String(productServices || '').trim(),
       company: salesSupport || 'Not specified',
       message,
       ...meta,
@@ -86,7 +130,7 @@ router.post('/contact-form', [
 
       // Send auto-reply to customer (optional)
       try {
-        await emailService.sendAutoReply(email, fullName);
+        await emailService.sendAutoReply(email, fullName, { city: String(city || '').trim() });
       } catch (autoReplyError) {
         console.warn('Auto-reply failed:', autoReplyError.message);
       }

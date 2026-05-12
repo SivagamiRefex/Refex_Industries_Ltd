@@ -306,6 +306,27 @@ export default function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t border-gray-800 pt-8">
+          <p className="text-center text-[11px] text-gray-400 mb-4 px-2">
+            City data on the contact form is sourced from{' '}
+            <a
+              href="https://github.com/dr5hn/countrystatecity-countries"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#7dc144] hover:underline"
+            >
+              geographic datasets
+            </a>{' '}
+            licensed under the{' '}
+            <a
+              href="https://opendatacommons.org/licenses/odbl/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#7dc144] hover:underline"
+            >
+              Open Database License (ODbL) 1.0
+            </a>
+            .
+          </p>
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-[#ffffff] text-sm">
               {copyrightText} {copyrightLink && copyrightLinkText && (

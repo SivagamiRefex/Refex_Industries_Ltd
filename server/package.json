@@ -70,6 +70,7 @@
   "author": "Sathish",
   "license": "ISC",
   "dependencies": {
+    "@countrystatecity/countries": "^1.0.5",
     "axios": "^1.13.2",
     "axios-cookiejar-support": "^6.0.5",
     "bcrypt": "^5.1.1",
