@@ -5,6 +5,19 @@ const { body, validationResult } = require('express-validator');
 const { sendToKissflowWebhook } = require('../helpers/kissflowWebhook');
 const { getRequestMeta, phoneToDigitsOnly } = require('../helpers/requestMeta');
 
+/** Split "City, State" label from india-cities API into parts for webhook. */
+function splitCityAndState(fullLabel) {
+  const trimmed = String(fullLabel || '').trim();
+  const commaIdx = trimmed.indexOf(',');
+  if (commaIdx === -1) {
+    return { cityname: trimmed, statename: '' };
+  }
+  return {
+    cityname: trimmed.slice(0, commaIdx).trim(),
+    statename: trimmed.slice(commaIdx + 1).trim(),
+  };
+}
+
 // Contact form submission endpoint
 router.post('/contact-form', [
   // Validation rules
@@ -87,13 +100,15 @@ router.post('/contact-form', [
     const meta = getRequestMeta(req);
     const phoneDigits = phoneToDigitsOnly(phone);
     const websiteName = 'Refex Industries Limited';
+    const cityFull = String(city || '').trim();
+    const { cityname, statename } = splitCityAndState(cityFull);
 
     // Prepare form data for email
     const formData = {
       name: fullName,
       email,
       phone: phoneDigits,
-      city: String(city || '').trim(),
+      city: cityFull,
       companyName: String(companyName || '').trim(),
       productServices: String(productServices || '').trim(),
       company: salesSupport || 'Not specified',
@@ -108,14 +123,17 @@ router.post('/contact-form', [
       email,
       phone: phoneDigits,
       Phone_Number: phoneDigits,
-      city: String(city || '').trim(),
-      City: String(city || '').trim(),
+      city: cityFull,
+      City: cityFull,
+      cityname,
+      statename,
       companyName: String(companyName || '').trim(),
       Company_Name: String(companyName || '').trim(),
       Product: String(productServices || '').trim(),
       company: salesSupport || 'Not specified',
       message,
       ...meta,
+      agentid: '69f827bdc13800617ff6f0da',
     };
 
     // Fire-and-forget queueing, do not await to avoid blocking API response.
