@@ -142,7 +142,7 @@ export default function ESGPoliciesSection() {
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {policies.map((policy) => (
             <div key={policy.id} className="group w-full">
               <div className="w-full aspect-square overflow-hidden mb-4">
